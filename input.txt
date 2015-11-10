@@ -3,7 +3,7 @@
 
 
 // rootfile with E vs Th_lab from Reactions program
-input_from_reactions ../Reactions/132Sn.root
+input_from_reaction ../reaction/132Sn.root
 
 output_rootfile 132Snout.root
 

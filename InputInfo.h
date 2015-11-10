@@ -9,7 +9,7 @@ class InputInfo
 	
 	Float_t fBeamEnergy;
 	
-	char fInfilenameFromReactions[200];
+	char fInfilenameFromReaction[200];
 	
 	char fRootfilename[200];
 	
@@ -20,21 +20,6 @@ class InputInfo
 	InputInfo();
 	~InputInfo();
 	
-	/*
-	 * 
-	 * necessary informaiton:
-	 * input file name (text file with output of dicebox)
-	 * output file name (root file with trees)
-	 * 
-	 * verbose=false
-	 * 
-	 * max gamma mul
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 * */
 	
 	
 };

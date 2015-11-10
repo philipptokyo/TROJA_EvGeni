@@ -5,8 +5,8 @@ using namespace std;
 
 InputInfo::InputInfo(){
 	
-	numberEvents=100;
-	beamEnergy=10.0; // in MeV/u
+	fNumberEvents=100;
+	fBeamEnergy=10.0; // in MeV/u
 	
 }
 
@@ -74,10 +74,10 @@ void InputInfo::parse(char filename[100]){
 		//get input parameter:
 		
 		
-		if(strcmp(temp[0],"input_from_reactions")==0)  {
+		if(strcmp(temp[0],"input_from_reaction")==0)  {
 // 			sprintf(infilenameFromDicebox,temp[1]);
-			strcpy(fInfilenameFromReactions,temp[1]);
-			cout << "Input file for event maker is '" << fInfilenameFromReactions << "'" << endl;
+			strcpy(fInfilenameFromReaction,temp[1]);
+			cout << "Input file for event maker is '" << fInfilenameFromReaction << "'" << endl;
 		}
 		else if(strcmp(temp[0],"output_rootfile")==0){
 // 			sprintf(rootfilenameDicebox,temp[1]);
@@ -87,7 +87,7 @@ void InputInfo::parse(char filename[100]){
 		else if(strcmp(temp[0],"beam_energy")==0){
 			fBeamEnergy=atof(temp[1]);
 			//beamGamma=1.0/TMath::Sqrt(1.0-(beamBeta*beamBeta));
-			cout << "Beam energy is set to '" << fBeamEnergy << "'" << endl;
+			cout << "Beam energy is set to '" << fBeamEnergy << "' MeV/u" << endl;
 		}
 		else if(strcmp(temp[0],"number_events")==0){
 			fNumberEvents=atoi(temp[1]);
