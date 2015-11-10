@@ -7,24 +7,13 @@ class InputInfo
 {
 	public:
 	
-	Float_t beamBeta;
-	Float_t beamGamma;
+	Float_t fBeamEnergy;
 	
-	char infilenameFromDicebox[200];
-	char infilenameFromTalys[200];
+	char fInfilenameFromReactions[200];
 	
-	char rootfilenameDicebox[200];
-	char rootfilenameTalys[200];
+	char fRootfilename[200];
 	
-	char filenameEvents[200];
-	
-	Int_t numberEvents;
-	
-// 	Int_t maxGammaMul;
-	Long64_t maxLines;
-	Int_t verbosity;
-	
-	Float_t binWidth;
+	Int_t fNumberEvents;
 	
 	void parse(char filename[100]);
 	

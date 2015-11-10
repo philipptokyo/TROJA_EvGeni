@@ -6,11 +6,6 @@ CXX = g++
 
 ifdef ROOTSYS
 CFLAGS = -c -g -Wall
-# IFLAGS += -I $(ROOTSYS)/include
-# #ROOTLIBS = $(ROOTLIBS)
-# ROOTLIBS = $(shell $(ROOTSYS)/bin/root-config --nonew --glibs) -lMinuit -lSpectrum
-# ROOTLIBS := $(filter-out -lNew,$(ROOTLIBS))
-# ROOTLIBS := $(filter-out -lpthread,$(ROOTLIBS))
 
 LDFLAGS  := `root-config --libs`
 CPPFLAGS := `root-config --cflags`
@@ -24,17 +19,9 @@ endif
 
 
 
-all: generator_talys
+all: makeEvents
 
-# generator_dicebox: *.o
-# 	$(CXX) $(IFLAGS) $(ROOTLIBS) $^ -o $@
-# 
-# %.o: %.cc
-# 	$(CXX) $(IFLAGS) $(CFLAGS) $(ROOTLIBS) $^
-
-# generator_talys: *.o
-# 	$(CXX) $(LDFLAGS) $(ROOTLIBS) $^ -o $@
-generator_talys: *.o
+makeEvents: *.o
 	$(CXX) $^ -o $@ $(LDFLAGS)
 
 %.o: %.cc
@@ -42,6 +29,4 @@ generator_talys: *.o
 
 	
 clean:
-	rm -f *.o *.so generator_talys
-
-
+	rm -f *.o *.so makeEvents

@@ -1,0 +1,19 @@
+// input example for makeEvents
+
+
+
+// rootfile with E vs Th_lab from Reactions program
+input_from_reactions ../Reactions/132Sn.root
+
+output_rootfile 132Snout.root
+
+
+//number of events to generate
+//default 100, if nothing is set
+number_events 1000
+
+
+// beam energy per nucleon in MeV/u
+//default is 10.0 MeV/u
+beam_energy 10.0
+
