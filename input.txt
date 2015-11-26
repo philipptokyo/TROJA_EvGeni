@@ -3,14 +3,23 @@
 
 
 // rootfile with E vs Th_lab from Reactions program
-input_from_reaction ../reaction/132Sn.root
+// input_from_reaction ../reaction/132Sntd_5.root
 
-output_rootfile 132Snout.root
+
+//input_from_reaction ../reaction/132Sntd_1.root
+//output_rootfile ~/sim/troja/132Sntd_1_evnts.root
+
+//input_from_reaction ../reaction/132Sntp_1.root
+//output_rootfile ~/sim/troja/132Sntp_1_evnts.root
+
+input_from_reaction ../reaction/132Sndp_1.root
+output_rootfile ~/sim/troja/132Sndp_1_evnts.root
+
 
 
 //number of events to generate
 //default 100, if nothing is set
-number_events 1000
+number_events 10000
 
 
 // beam energy per nucleon in MeV/u
