@@ -3,7 +3,8 @@
 
 
 // rootfile with E vs Th_lab from Reactions program
-// input_from_reaction ../reaction/132Sntd_5.root
+//input_from_reaction ../reaction/132Sndp_5.root
+//output_rootfile ~/sim/troja/132Sndp_5_evnts_new.root
 
 
 //input_from_reaction ../reaction/132Sntd_1.root
@@ -13,16 +14,30 @@
 //output_rootfile ~/sim/troja/132Sntp_1_evnts.root
 
 input_from_reaction ../reaction/132Sndp_1.root
-output_rootfile ~/sim/troja/132Sndp_1_evnts.root
+output_rootfile 132Sndp_1_evnts_test.root
+//output_rootfile ~/sim/troja/132Sndp_1_evnts_new.root
 
 
 
-//number of events to generate
-//default 100, if nothing is set
+// number of events to generate
+// default 100, if nothing is set
 number_events 10000
 
 
 // beam energy per nucleon in MeV/u
-//default is 10.0 MeV/u
+// default is 10.0 MeV/u
 beam_energy 10.0
+
+
+// give the root file with oedo beam profile
+beam_profile_file_oedo /mnt/raid/OEDO/OEDO_Matsushita/132Sn/3rd_order/oedo_132sn_10MeV.root
+
+// choose what should be taken from beam profile file
+beam_profile_energy
+beam_profile_position_x
+beam_profile_position_y
+beam_profile_angular_a
+beam_profile_angular_b
+
+
 

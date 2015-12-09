@@ -7,7 +7,14 @@ InputInfo::InputInfo(){
 	
 	fNumberEvents=100;
 	fBeamEnergy=10.0; // in MeV/u
-	
+        
+        fHaveOedoSimFileName=false;
+        
+        fProfileE=false;	
+        fProfileX=false;	
+        fProfileY=false;	
+        fProfileA=false;	
+        fProfileB=false;	
 }
 
 InputInfo::~InputInfo(){
@@ -92,6 +99,31 @@ void InputInfo::parse(char filename[100]){
 		else if(strcmp(temp[0],"number_events")==0){
 			fNumberEvents=atoi(temp[1]);
 			cout << "Number of events to generate is set to " << fNumberEvents << endl;
+		}
+		else if(strcmp(temp[0],"beam_profile_file_oedo")==0){
+			strcpy(fOedoSimFileName,temp[1]);
+                        fHaveOedoSimFileName=true;
+			cout << "Root file name with OEDO beam profile is set to " << fOedoSimFileName << endl;
+		}
+		else if(strcmp(temp[0],"beam_profile_energy")==0){
+                        fProfileE=true;
+			cout << "Beam profile - energy - requested " << endl;
+		}
+		else if(strcmp(temp[0],"beam_profile_position_x")==0){
+                        fProfileX=true;
+			cout << "Beam profile - x position - requested " << endl;
+		}
+		else if(strcmp(temp[0],"beam_profile_position_y")==0){
+                        fProfileY=true;
+			cout << "Beam profile - y position - requested " << endl;
+		}
+		else if(strcmp(temp[0],"beam_profile_angular_a")==0){
+                        fProfileA=true;
+			cout << "Beam profile - a angle (dx) - requested " << endl;
+		}
+		else if(strcmp(temp[0],"beam_profile_angular_b")==0){
+                        fProfileB=true;
+			cout << "Beam profile - b angle (dy) - requested " << endl;
 		}
 		else {
 			cout<<"Could not read your input keyword '" << temp[0] << "'. Aborting program."<<endl; 

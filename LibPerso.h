@@ -40,6 +40,7 @@
 #include        "TBranch.h"
 #include        "TCanvas.h"
 #include        "TChain.h"
+#include        "TClonesArray.h"
 #include        "TCut.h"
 #include	"TCutG.h"
 #include	"TDirectory.h"

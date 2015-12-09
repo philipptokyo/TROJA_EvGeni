@@ -27,7 +27,7 @@ Int_t main(Int_t argc, char **argv){
   
   
   // if root shall stop the program before it finished, comment this in
-//  TApplication *theApp=new TApplication("theApp",  0, 0);
+  TApplication *theApp=new TApplication("theApp",  0, 0);
   
   
   cout << "Welcome to event maker from Reactions code" << endl;
@@ -54,6 +54,9 @@ Int_t main(Int_t argc, char **argv){
   randomizer->SetSeed(0);
   
   TFile* infile = TFile::Open(info->fInfilenameFromReaction,"read");
+  
+  TFile* outfile = new TFile(info->fRootfilename, "recreate");
+  
   
   if(!infile){
     
@@ -100,7 +103,63 @@ Int_t main(Int_t argc, char **argv){
   cout << "Found " << graphCounter << " TGraphs" << endl;
   
   
+  // get the histograms with beam information 
+  // from Oedo simulation by Matsushita
+  TFile* fileBeamProfile;
+  TTree* treeBeamProfile;
   
+  Float_t fhxout[14]={0.0};
+  
+  Int_t oedoMass=0, oedoCharge=0;
+  Float_t oedoE=10.0;    // in MeV/u
+  Float_t oedoX=0.0, oedoY=0.0, oedoZ=0.0; // position in mm
+  Float_t oedoA=0.0, oedoB=0.0; // angle in mrad
+  Float_t oedoTheta=0.0, oedoPhi=0.0; // in rad
+  Int_t oedoNoEvents=0;
+   
+  if(info->HaveOedoSimFileName()){
+    cout << "Opening beam profile file ..." << endl;
+    fileBeamProfile=TFile::Open(info->fOedoSimFileName, "read");
+
+    if(!fileBeamProfile){
+      cout << "Error! OEDO beam simulation file given, but not found! " << endl;
+      cout << "Please check the file name in 'beam_profile_file_oedo' or comment out this line!" << endl;
+      return 0;
+    }
+
+    cout << "Getting Tree ..." << endl;
+    treeBeamProfile=(TTree*)fileBeamProfile->Get("Events");
+    
+    if(!treeBeamProfile){
+      cout << "Tree 'Events' not found in root file!" << endl;
+      return 0;
+    }
+
+    treeBeamProfile->SetBranchAddress("fhxout", fhxout);
+
+    oedoNoEvents=treeBeamProfile->GetEntries();
+    cout << oedoNoEvents << " events found in tree " << endl;
+
+    //treeBeamProfile->GetEvent(1);
+    //
+    //oedoMass=(Int_t)fhxout[0];
+    //oedoE=fhxout[4];
+    //oedoX=fhxout[10];
+    //oedoY=fhxout[11];
+    //oedoA=fhxout[12];
+    //oedoB=fhxout[13];
+
+    //cout << "Mass " << oedoMass << ", E " << oedoE << ", X " << oedoX << ", Y " << oedoY << ", A " << oedoA << ", B " << oedoB << endl;
+
+  }
+  
+  
+  
+  
+  
+  
+  // create a histogram
+  // from the graphs/splines  
   TH1F* hist0 = graph[0]->GetHistogram();
 
   Int_t nbins = hist0->GetXaxis()->GetNbins();
@@ -165,17 +224,36 @@ Int_t main(Int_t argc, char **argv){
   histAll->GetXaxis()->SetRangeUser(0.0, 180.0);  
   
   // save histogram to output rootfile
-  TFile* outfile = new TFile(info->fRootfilename, "recreate");
   outfile->cd();
   histAll->Write();
-
+  cout << "All graphs converted to one histogram!" << endl;
   
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   // generate events and write them to tree
-//   Double_t x=0.0, 
-//            y=0.0, 
-//            z=0.0; 
+//  Double_t x=0.0, // in mm 
+//           y=0.0, // in mm
+//           z=0.0; // in mm
   Double_t e=0.0, // energy in MeV 
            t=0.0, // theta in rad
            p=0.0; // phi in rad
@@ -183,13 +261,23 @@ Int_t main(Int_t argc, char **argv){
 
   TTree *events = new TTree();
   events->Branch("eventNumber", &eventNumber, "eventNumber/I");
-//   events->Branch("x",&x, "x/D");
-//   events->Branch("y",&y, "y/D");
-//   events->Branch("z",&z, "z/D");
+  events->Branch("pdgID",&pdgID, "pdgID/I");
+//  events->Branch("x",&x, "x/D");
+//  events->Branch("y",&y, "y/D");
+//  events->Branch("z",&z, "z/D");
   events->Branch("energy",&e, "energy/D");
   events->Branch("theta",&t, "theta/D");
   events->Branch("phi",&p, "phi/D");
-  events->Branch("pdgID",&pdgID, "pdgID/I");
+  events->Branch("beamMassNumber", &oedoMass, "beamMassNumber/I");
+  events->Branch("beamChargeNumber", &oedoCharge, "beamChargeNumber/I");
+  events->Branch("beamEnergy", &oedoE, "beamEnergy/F");
+  events->Branch("beamX", &oedoX, "beamX/F");
+  events->Branch("beamY", &oedoY, "beamY/F");
+  events->Branch("beamZ", &oedoZ, "beamZ/F");
+  events->Branch("beamA", &oedoA, "beamA/F");
+  events->Branch("beamB", &oedoB, "beamB/F");
+  events->Branch("beamTheta", &oedoTheta, "beamTheta/F");
+  events->Branch("beamPhi", &oedoPhi, "beamPhi/F");
 
 
   //printf("Got energy %f, theta %f\n", en, th);
@@ -205,17 +293,87 @@ Int_t main(Int_t argc, char **argv){
 
     eventNumber=i;
 
-    if(i%100000==0){
+    if(i%1000==0){
       printf("%i events generated (%i requested)\n", i, info->fNumberEvents); 
     }
 
-    t=181.0;
-    while(t>180.0){
-      histAll->GetRandom2(t,e);
+
+    // get beam information
+    if(info->HaveOedoSimFileName()){ // todo: check if any information is needed from tree before reading it
+
+      fhxout[0]=0.0;
+
+      while((((Int_t)fhxout[0]) != 132) || (((Int_t)fhxout[1]) != 50)  ){
+
+        Int_t rndmEvnt = (Int_t)randomizer->Uniform(oedoNoEvents);
+
+        treeBeamProfile->GetEvent(rndmEvnt);
+      }
+      
+      oedoMass=(Int_t)fhxout[0];
+      oedoCharge=(Int_t)fhxout[1];
+
+      if(info->ProfileBeamE()){
+        oedoE=fhxout[4];
+      }
+
+      if(info->ProfileBeamX()){
+        oedoX=fhxout[10];
+      }
+
+      if(info->ProfileBeamY()){
+        oedoY=fhxout[11];
+      }
+
+      if(info->ProfileBeamA()){
+        oedoA=fhxout[12];
+      }
+
+      if(info->ProfileBeamB()){
+        oedoB=fhxout[13];
+      }
+
+
+
     }
+
+
+    // calculate theta and phi of beam at target
+    TVector3 vBeam(0.0, 0.0, 1.0);
+    vBeam.RotateX(oedoA/1000.0);
+    vBeam.RotateY(oedoB/1000.0);
+
+    oedoTheta=vBeam.Theta();
+    oedoPhi=vBeam.Phi();
+
+
+
+
+
+//    t=181.0;
+//    while(t>180.0){
+//      histAll->GetRandom2(t,e);
+//    }
+
+    
+    // sample energy from graph
+    // choose a random graph
+    Int_t g=(Int_t)randomizer->Uniform(graphCounter);
+    
+    if(g<0 || g>=graphCounter){
+      cout << "Invalid graph number " << g << endl;
+      return 0;
+    }
+    
+    // at the moment: only uniform theta distribution
+    // todo: add physics here!!!!!
+    t=randomizer->Uniform(180.0);
+    e=graph[g]->Eval(t);
+
 
     t*=TMath::Pi()/180.0;
     
+    // phi uniform
     p=randomizer->Uniform(2.0*TMath::Pi());
     
     TVector3 direction(0.0, 0.0, -1.0);
@@ -224,11 +382,6 @@ Int_t main(Int_t argc, char **argv){
     direction.SetPhi(p);
     direction.SetTheta(t);
 
-    //x=direction.X();
-    //y=direction.Y();
-    //z=direction.Z();
-
-    //printf("Got energy %lf, theta %lf, phi %lf,  x %lf, y %lf, z %lf\n", e, t, p, x, y, z);
 
     pdgID=2212; //proton
 
@@ -249,7 +402,7 @@ Int_t main(Int_t argc, char **argv){
   // if histograms shall be plotted, run theApp
   // otherwise program closes
 //  theApp->Run();
-  
+  delete theApp;  
   
   return 0;
 }
