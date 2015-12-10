@@ -110,12 +110,21 @@ Int_t main(Int_t argc, char **argv){
   
   //Float_t fhxout[14]={0.0}; // full sim file
   
-  Int_t oedoMass=0, oedoCharge=0;
-  Float_t oedoE=10.0;    // in MeV/u
-  Float_t oedoX=0.0, oedoY=0.0, oedoZ=0.0; // position in mm
-  Float_t oedoA=0.0, oedoB=0.0; // angle in mrad
-  Float_t oedoTheta=0.0, oedoPhi=0.0; // in rad
-  Int_t oedoNoEvents=0;
+  Int_t beamMass=0, beamCharge=0;
+  Float_t beamE=10.0;    // in MeV/u
+  Float_t beamX=0.0, beamY=0.0, beamZ=0.0; // position in mm
+  Float_t beamA=0.0, beamB=0.0; // angle in mrad
+  Float_t beamTheta=0.0, beamPhi=0.0; // in rad
+  Int_t beamNoEvents=0;
+
+
+
+  if(!(info->HaveOedoSimFileName()) && 
+      ((info->ProfileBeamE()) || (info->ProfileBeamX()) || (info->ProfileBeamY()) || (info->ProfileBeamA()) || (info->ProfileBeamB()) )){
+    cout << "ERROR! Beam profiling requested, but no root file for beam profile is given!" << endl;
+    return 0;
+  }
+
    
   if(info->HaveOedoSimFileName()){
     cout << "Opening beam profile file ..." << endl;
@@ -138,26 +147,16 @@ Int_t main(Int_t argc, char **argv){
     }
 
     //treeBeamProfile->SetBranchAddress("fhxout", fhxout); // full sim file
-    treeBeamProfile->SetBranchAddress("mass", &oedoMass); // shortened sim file
-    treeBeamProfile->SetBranchAddress("energy", &oedoE);  // shortened sim file
-    treeBeamProfile->SetBranchAddress("x", &oedoX);       // shortened sim file
-    treeBeamProfile->SetBranchAddress("y", &oedoY);       // shortened sim file
-    treeBeamProfile->SetBranchAddress("a", &oedoA);       // shortened sim file
-    treeBeamProfile->SetBranchAddress("b", &oedoB);       // shortened sim file
+    treeBeamProfile->SetBranchAddress("mass", &beamMass); // shortened sim file
+    treeBeamProfile->SetBranchAddress("energy", &beamE);  // shortened sim file
+    treeBeamProfile->SetBranchAddress("x", &beamX);       // shortened sim file
+    treeBeamProfile->SetBranchAddress("y", &beamY);       // shortened sim file
+    treeBeamProfile->SetBranchAddress("a", &beamA);       // shortened sim file
+    treeBeamProfile->SetBranchAddress("b", &beamB);       // shortened sim file
 
-    oedoNoEvents=treeBeamProfile->GetEntries();
-    cout << oedoNoEvents << " events found in tree " << endl;
+    beamNoEvents=treeBeamProfile->GetEntries();
+    cout << beamNoEvents << " events found in tree " << endl;
 
-    //treeBeamProfile->GetEvent(1);
-    //
-    //oedoMass=(Int_t)fhxout[0];
-    //oedoE=fhxout[4];
-    //oedoX=fhxout[10];
-    //oedoY=fhxout[11];
-    //oedoA=fhxout[12];
-    //oedoB=fhxout[13];
-
-    //cout << "Mass " << oedoMass << ", E " << oedoE << ", X " << oedoX << ", Y " << oedoY << ", A " << oedoA << ", B " << oedoB << endl;
 
   }
   
@@ -246,33 +245,40 @@ Int_t main(Int_t argc, char **argv){
 
 
   // generate events and write them to tree
-//  Double_t x=0.0, // in mm 
-//           y=0.0, // in mm
-//           z=0.0; // in mm
-  Double_t e=0.0, // energy in MeV 
-           t=0.0, // theta in rad
-           p=0.0; // phi in rad
-  Int_t eventNumber=0, pdgID=2212;
+
+  // light ejectile position and flight direction
+//  Double_t lightX=0.0, // in mm 
+//           lightY=0.0, // in mm
+//           lightZ=0.0; // in mm
+  Double_t lightEnergy=0.0, // energy in MeV 
+           lightTheta=0.0, // theta in rad
+           lightPhi=0.0; // phi in rad
+  Int_t lightPdgId=2212;
+  Int_t eventNumber=0;
 
   TTree *events = new TTree();
   events->Branch("eventNumber", &eventNumber, "eventNumber/I");
-  events->Branch("pdgID",&pdgID, "pdgID/I");
-//  events->Branch("x",&x, "x/D");
-//  events->Branch("y",&y, "y/D");
-//  events->Branch("z",&z, "z/D");
-  events->Branch("energy",&e, "energy/D");
-  events->Branch("theta",&t, "theta/D");
-  events->Branch("phi",&p, "phi/D");
-  events->Branch("beamMassNumber", &oedoMass, "beamMassNumber/I");
-  events->Branch("beamChargeNumber", &oedoCharge, "beamChargeNumber/I");
-  events->Branch("beamEnergy", &oedoE, "beamEnergy/F");
-  events->Branch("beamX", &oedoX, "beamX/F");
-  events->Branch("beamY", &oedoY, "beamY/F");
-  events->Branch("beamZ", &oedoZ, "beamZ/F");
-  events->Branch("beamA", &oedoA, "beamA/F");
-  events->Branch("beamB", &oedoB, "beamB/F");
-  events->Branch("beamTheta", &oedoTheta, "beamTheta/F");
-  events->Branch("beamPhi", &oedoPhi, "beamPhi/F");
+  
+  // light ejectile data
+  events->Branch("lightPdgId",&lightPdgId, "lightPdgId/I");
+//  events->Branch("lightX",&lightX, "lightX/D"); // is/should be taken from beamX
+//  events->Branch("lightY",&lightY, "lightY/D");
+//  events->Branch("lightZ",&lightZ, "lightZ/D");
+  events->Branch("lightEnergy",&lightEnergy, "lightEnergy/D");
+  events->Branch("lightTheta",&lightTheta, "lightTheta/D");
+  events->Branch("lightPhi",&lightPhi, "lightPhi/D");
+  
+  // projectile data
+  events->Branch("beamMassNumber", &beamMass, "beamMassNumber/I");
+  events->Branch("beamChargeNumber", &beamCharge, "beamChargeNumber/I");
+  events->Branch("beamEnergy", &beamE, "beamEnergy/F");
+  events->Branch("beamX", &beamX, "beamX/F");
+  events->Branch("beamY", &beamY, "beamY/F");
+  events->Branch("beamZ", &beamZ, "beamZ/F");
+  events->Branch("beamA", &beamA, "beamA/F");
+  events->Branch("beamB", &beamB, "beamB/F");
+  events->Branch("beamTheta", &beamTheta, "beamTheta/F");
+  events->Branch("beamPhi", &beamPhi, "beamPhi/F");
 
 
   //printf("Got energy %f, theta %f\n", en, th);
@@ -288,7 +294,7 @@ Int_t main(Int_t argc, char **argv){
 
     eventNumber=i;
 
-    if(i%1000==0){
+    if(i%10000==0){
       printf("%i events generated (%i requested)\n", i, info->fNumberEvents); 
     }
 
@@ -296,56 +302,67 @@ Int_t main(Int_t argc, char **argv){
     // get beam information
     if(info->HaveOedoSimFileName()){ // todo: check if any information is needed from tree before reading it
 
+      // the following lines are only needed if the full oedo sim file is taken
+      // some selections are needed
+
+
       // fhxout[0]=0.0;
 
       // while((((Int_t)fhxout[0]) != 132) || (((Int_t)fhxout[1]) != 50)  ){
 
-      //   Int_t rndmEvnt = (Int_t)randomizer->Uniform(oedoNoEvents);
+      //   Int_t rndmEvnt = (Int_t)randomizer->Uniform(beamNoEvents);
 
       //   treeBeamProfile->GetEvent(rndmEvnt);
       // }
       // 
-      // oedoMass=(Int_t)fhxout[0];
-      // oedoCharge=(Int_t)fhxout[1];
+      // beamMass=(Int_t)fhxout[0];
+      // beamCharge=(Int_t)fhxout[1];
 
       // if(info->ProfileBeamE()){
-      //   oedoE=fhxout[4];
+      //   beamE=fhxout[4];
       // }
 
       // if(info->ProfileBeamX()){
-      //   oedoX=fhxout[10];
+      //   beamX=fhxout[10];
       // }
 
       // if(info->ProfileBeamY()){
-      //   oedoY=fhxout[11];
+      //   beamY=fhxout[11];
       // }
 
       // if(info->ProfileBeamA()){
-      //   oedoA=fhxout[12];
+      //   beamA=fhxout[12];
       // }
 
       // if(info->ProfileBeamB()){
-      //   oedoB=fhxout[13];
+      //   beamB=fhxout[13];
       // }
 
 
 
       // shortened oedo sim file contains only good events
-      Int_t rndmEvnt = (Int_t)randomizer->Uniform(oedoNoEvents);
+      Int_t rndmEvnt = (Int_t)randomizer->Uniform(beamNoEvents);
       treeBeamProfile->GetEvent(rndmEvnt);
 
 
+
+    }else{ // no beam profile
+      beamA=0.0;
+      beamB=0.0;
+      beamX=0.0;
+      beamY=0.0;
+      beamZ=0.0;
 
     }
 
 
     // calculate theta and phi of beam at target
     TVector3 vBeam(0.0, 0.0, 1.0);
-    vBeam.RotateX(oedoA/1000.0);
-    vBeam.RotateY(oedoB/1000.0);
+    vBeam.RotateX(beamA/1000.0);
+    vBeam.RotateY(beamB/1000.0);
 
-    oedoTheta=vBeam.Theta();
-    oedoPhi=vBeam.Phi();
+    beamTheta=vBeam.Theta();
+    beamPhi=vBeam.Phi();
 
 
 
@@ -368,23 +385,31 @@ Int_t main(Int_t argc, char **argv){
     
     // at the moment: only uniform theta distribution
     // todo: add physics here!!!!!
-    t=randomizer->Uniform(180.0);
-    e=graph[g]->Eval(t);
+    lightTheta=randomizer->Uniform(180.0);
+    lightEnergy=graph[g]->Eval(lightTheta);
 
-
-    t*=TMath::Pi()/180.0;
+    // continue in rad
+    // as required for geant4
+    lightTheta*=TMath::Pi()/180.0;
     
     // phi uniform
-    p=randomizer->Uniform(2.0*TMath::Pi());
+    lightPhi=randomizer->Uniform(2.0*TMath::Pi());
     
     TVector3 direction(0.0, 0.0, -1.0);
     direction.SetMag(1.0);
 
-    direction.SetPhi(p);
-    direction.SetTheta(t);
+    direction.SetPhi(lightPhi);
+    direction.SetTheta(lightTheta);
+
+    // rotate to beam direction
+    direction.RotateX(beamA/1000.0);
+    direction.RotateY(beamB/1000.0);
+
+    lightTheta=direction.Theta();
+    lightPhi=direction.Phi();
 
 
-    pdgID=2212; //proton
+    lightPdgId=2212; //proton
 
     events->Fill();
   }
