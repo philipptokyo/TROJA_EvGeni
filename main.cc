@@ -50,6 +50,35 @@ Int_t main(Int_t argc, char **argv){
   //get information from textfile
   info->parse(argv[1]);
 
+
+  // make some cross checks of the inputs
+  if(!(info->HaveOedoSimFileName()) && 
+      ((info->ProfileBeamE()) || (info->ProfileBeamX()) || (info->ProfileBeamY()) || (info->ProfileBeamA()) || (info->ProfileBeamB()) )){
+    cout << "ERROR! Beam profiling requested, but no root file for beam profile is given!" << endl;
+    return 0;
+  }
+
+  if(info->ProfileBeamE()){
+    cout << "WARNING! Profiling of beam energy is requested. " << endl;
+    cout << "This option is not yet implemented with respect to the angular distribution of the light particle" << endl;
+    cout << "Omitting this option!" << endl;
+    cout << endl;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   TRandom3 *randomizer=new TRandom3();  
   randomizer->SetSeed(0);
   
@@ -352,17 +381,42 @@ Int_t main(Int_t argc, char **argv){
       beamX=0.0;
       beamY=0.0;
       beamZ=0.0;
-
+      beamE=info->fBeamEnergy;
     }
 
 
     // calculate theta and phi of beam at target
     TVector3 vBeam(0.0, 0.0, 1.0);
-    vBeam.RotateX(beamA/1000.0);
-    vBeam.RotateY(beamB/1000.0);
+    
+    if(info->ProfileBeamA()){
+      vBeam.RotateX(beamA/1000.0);
+    }else{
+      beamA=0.0;
+    }
+
+    if(info->ProfileBeamB()){
+      vBeam.RotateY(beamB/1000.0);
+    }else{
+      beamB=0.0;
+    }
 
     beamTheta=vBeam.Theta();
     beamPhi=vBeam.Phi();
+
+    if(!info->ProfileBeamX()){
+      beamX=0.0;
+    }
+    if(!info->ProfileBeamY()){
+      beamY=0.0;
+    }
+
+
+    if(info->ProfileBeamE()){
+      // todo: this option needs to be implemented
+      beamE=info->fBeamEnergy;
+    }else{
+      beamE=info->fBeamEnergy;
+    }
 
 
 
