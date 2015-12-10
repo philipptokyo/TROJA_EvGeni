@@ -30,7 +30,8 @@ beam_energy 10.0
 
 
 // give the root file with oedo beam profile
-beam_profile_file_oedo /mnt/raid/OEDO/OEDO_Matsushita/132Sn/3rd_order/oedo_132sn_10MeV.root
+//beam_profile_file_oedo /mnt/raid/OEDO/OEDO_Matsushita/132Sn/3rd_order/oedo_132sn_10MeV.root
+beam_profile_file_oedo /mnt/raid/OEDO/OEDO_Matsushita/132Sn/3rd_order/oedo_132sn_10MeV_short.root
 
 // choose what should be taken from beam profile file
 beam_profile_energy

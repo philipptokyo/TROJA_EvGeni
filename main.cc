@@ -108,7 +108,7 @@ Int_t main(Int_t argc, char **argv){
   TFile* fileBeamProfile;
   TTree* treeBeamProfile;
   
-  Float_t fhxout[14]={0.0};
+  //Float_t fhxout[14]={0.0}; // full sim file
   
   Int_t oedoMass=0, oedoCharge=0;
   Float_t oedoE=10.0;    // in MeV/u
@@ -128,14 +128,22 @@ Int_t main(Int_t argc, char **argv){
     }
 
     cout << "Getting Tree ..." << endl;
-    treeBeamProfile=(TTree*)fileBeamProfile->Get("Events");
+    //treeBeamProfile=(TTree*)fileBeamProfile->Get("Events"); // full sim file
+    treeBeamProfile=(TTree*)fileBeamProfile->Get("events"); // shortened sim file
     
     if(!treeBeamProfile){
-      cout << "Tree 'Events' not found in root file!" << endl;
+      //cout << "Tree 'Events' not found in root file!" << endl;
+      cout << "Tree 'events' not found in root file!" << endl;
       return 0;
     }
 
-    treeBeamProfile->SetBranchAddress("fhxout", fhxout);
+    //treeBeamProfile->SetBranchAddress("fhxout", fhxout); // full sim file
+    treeBeamProfile->SetBranchAddress("mass", &oedoMass); // shortened sim file
+    treeBeamProfile->SetBranchAddress("energy", &oedoE);  // shortened sim file
+    treeBeamProfile->SetBranchAddress("x", &oedoX);       // shortened sim file
+    treeBeamProfile->SetBranchAddress("y", &oedoY);       // shortened sim file
+    treeBeamProfile->SetBranchAddress("a", &oedoA);       // shortened sim file
+    treeBeamProfile->SetBranchAddress("b", &oedoB);       // shortened sim file
 
     oedoNoEvents=treeBeamProfile->GetEntries();
     cout << oedoNoEvents << " events found in tree " << endl;
@@ -237,19 +245,6 @@ Int_t main(Int_t argc, char **argv){
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
   // generate events and write them to tree
 //  Double_t x=0.0, // in mm 
 //           y=0.0, // in mm
@@ -301,37 +296,43 @@ Int_t main(Int_t argc, char **argv){
     // get beam information
     if(info->HaveOedoSimFileName()){ // todo: check if any information is needed from tree before reading it
 
-      fhxout[0]=0.0;
+      // fhxout[0]=0.0;
 
-      while((((Int_t)fhxout[0]) != 132) || (((Int_t)fhxout[1]) != 50)  ){
+      // while((((Int_t)fhxout[0]) != 132) || (((Int_t)fhxout[1]) != 50)  ){
 
-        Int_t rndmEvnt = (Int_t)randomizer->Uniform(oedoNoEvents);
+      //   Int_t rndmEvnt = (Int_t)randomizer->Uniform(oedoNoEvents);
 
-        treeBeamProfile->GetEvent(rndmEvnt);
-      }
-      
-      oedoMass=(Int_t)fhxout[0];
-      oedoCharge=(Int_t)fhxout[1];
+      //   treeBeamProfile->GetEvent(rndmEvnt);
+      // }
+      // 
+      // oedoMass=(Int_t)fhxout[0];
+      // oedoCharge=(Int_t)fhxout[1];
 
-      if(info->ProfileBeamE()){
-        oedoE=fhxout[4];
-      }
+      // if(info->ProfileBeamE()){
+      //   oedoE=fhxout[4];
+      // }
 
-      if(info->ProfileBeamX()){
-        oedoX=fhxout[10];
-      }
+      // if(info->ProfileBeamX()){
+      //   oedoX=fhxout[10];
+      // }
 
-      if(info->ProfileBeamY()){
-        oedoY=fhxout[11];
-      }
+      // if(info->ProfileBeamY()){
+      //   oedoY=fhxout[11];
+      // }
 
-      if(info->ProfileBeamA()){
-        oedoA=fhxout[12];
-      }
+      // if(info->ProfileBeamA()){
+      //   oedoA=fhxout[12];
+      // }
 
-      if(info->ProfileBeamB()){
-        oedoB=fhxout[13];
-      }
+      // if(info->ProfileBeamB()){
+      //   oedoB=fhxout[13];
+      // }
+
+
+
+      // shortened oedo sim file contains only good events
+      Int_t rndmEvnt = (Int_t)randomizer->Uniform(oedoNoEvents);
+      treeBeamProfile->GetEvent(rndmEvnt);
 
 
 
