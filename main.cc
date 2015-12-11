@@ -389,13 +389,13 @@ Int_t main(Int_t argc, char **argv){
     TVector3 vBeam(0.0, 0.0, 1.0);
     
     if(info->ProfileBeamA()){
-      vBeam.RotateX(beamA/1000.0);
+      vBeam.RotateY(beamA/1000.0);
     }else{
       beamA=0.0;
     }
 
     if(info->ProfileBeamB()){
-      vBeam.RotateY(beamB/1000.0);
+      vBeam.RotateX(beamB/1000.0);
     }else{
       beamB=0.0;
     }
@@ -450,18 +450,15 @@ Int_t main(Int_t argc, char **argv){
     lightPhi=randomizer->Uniform(2.0*TMath::Pi());
     
     TVector3 direction(0.0, 0.0, -1.0);
-    direction.SetMag(1.0);
 
-    direction.SetPhi(lightPhi);
-    direction.SetTheta(lightTheta);
+    direction.SetMagThetaPhi(1.0, lightTheta, lightPhi);
 
     // rotate to beam direction
-    direction.RotateX(beamA/1000.0);
-    direction.RotateY(beamB/1000.0);
+    direction.RotateY(beamA/1000.0);
+    direction.RotateX(beamB/1000.0);
 
     lightTheta=direction.Theta();
     lightPhi=direction.Phi();
-
 
     lightPdgId=2212; //proton
 
