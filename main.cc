@@ -72,13 +72,6 @@ Int_t main(Int_t argc, char **argv){
 
 
 
-
-
-
-
-
-
-
   TRandom3 *randomizer=new TRandom3();  
   randomizer->SetSeed(0);
   
@@ -177,6 +170,7 @@ Int_t main(Int_t argc, char **argv){
 
     //treeBeamProfile->SetBranchAddress("fhxout", fhxout); // full sim file
     treeBeamProfile->SetBranchAddress("mass", &beamMass); // shortened sim file
+    treeBeamProfile->SetBranchAddress("z", &beamCharge);  // shortened sim file
     treeBeamProfile->SetBranchAddress("energy", &beamE);  // shortened sim file
     treeBeamProfile->SetBranchAddress("x", &beamX);       // shortened sim file
     treeBeamProfile->SetBranchAddress("y", &beamY);       // shortened sim file
@@ -382,6 +376,8 @@ Int_t main(Int_t argc, char **argv){
       beamY=0.0;
       beamZ=0.0;
       beamE=info->fBeamEnergy;
+      beamMass=132;  // mass number
+      beamCharge=50; // charge number
     }
 
 
@@ -413,7 +409,10 @@ Int_t main(Int_t argc, char **argv){
 
     if(info->ProfileBeamE()){
       // todo: this option needs to be implemented
-      beamE=info->fBeamEnergy;
+      //beamE=info->fBeamEnergy;
+
+      // test: run shell command and execute 'reaction'
+      popen(Form("/home/philipp/programme/reaction/Reaction -p 82 50 -t 1 1 -tr 1 0.0 1 -e %f -o /home/philipp/programme/makeEvents/132Sndp_deleteme.root", beamE*(Float_t)beamMass),"");
     }else{
       beamE=info->fBeamEnergy;
     }
