@@ -27,7 +27,7 @@ output_rootfile 132Sn_energy_test.root
 
 // number of events to generate
 // default 100, if nothing is set
-number_events 100
+number_events 100000
 
 
 // beam energy per nucleon in MeV/u

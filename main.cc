@@ -312,12 +312,18 @@ Int_t main(Int_t argc, char **argv){
   }else{
     printf("Start generating events.\n");
   }
+  
+
+  TStopwatch* watch = new TStopwatch();
+  watch->Start();
+
+  Int_t notProcessed=0; // aux for counting events with too low energy (todo)
 
   for(Int_t i=0; i<info->fNumberEvents; i++){
 
-    eventNumber=i;
+    eventNumber=i; // for the tree
 
-    if(i%10000==0){
+    if(i%1000==0){
       printf("%i events generated (%i requested)\n", i, info->fNumberEvents); 
     }
 
@@ -407,12 +413,53 @@ Int_t main(Int_t argc, char **argv){
     }
 
 
+    char tempFileName[100];
+    TFile* tempFile;
+    Int_t numberOfStates=2;
+    Float_t maxExEnergy=5.0;
+    TGraph* tempGraph[numberOfStates];
+
     if(info->ProfileBeamE()){
-      // todo: this option needs to be implemented
-      //beamE=info->fBeamEnergy;
+
+      if(beamE<maxExEnergy){
+        //cout << "beamE = " << beamE << endl;
+        notProcessed++;
+        continue; // bad hack! todo!
+      }
 
       // test: run shell command and execute 'reaction'
-      popen(Form("/home/philipp/programme/reaction/Reaction -p 82 50 -t 1 1 -tr 1 0.0 1 -e %f -o /home/philipp/programme/makeEvents/132Sndp_deleteme.root", beamE*(Float_t)beamMass),"");
+      char tempCommand[500];
+      sprintf(tempFileName, "/home/philipp/programme/makeEvents/132Sndp_deleteme.root");
+
+      //sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p 82 50 -t 1 1 -tr 1 %f %d -e %f -o %s",maxExEnergy, numberOfStates, beamE*(Float_t)beamMass, tempFileName);
+      sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p 82 50 -t 1 1 -tr 1 %f %d -e %f -o %s > /dev/null",maxExEnergy, numberOfStates, beamE*(Float_t)beamMass, tempFileName);
+      
+      //cout << "Executing command: " << tempCommand << endl;
+      
+      //popen(tempCommand,"");
+      system(tempCommand);
+      
+      tempFile = TFile::Open(tempFileName,"read");
+      if(!tempFile){
+        cout << "Temporary file is not existing: " << tempFileName << endl;
+        return 0;
+      }
+      //TGraph* tempGraph[numberOfStates];
+      for(Int_t j=0; j<numberOfStates; j++){
+        tempGraph[j]=new TGraph();
+        char tmp[20];
+        sprintf(tmp,"EvsTh_lab_%i",j);
+        tempGraph[j] = (TGraph*)tempFile->Get(tmp);
+        
+        if(!tempGraph[j]){
+          cout << "Graph not found: " << tmp << endl;
+          return 0;
+
+        }
+      }
+
+
+
     }else{
       beamE=info->fBeamEnergy;
     }
@@ -427,19 +474,28 @@ Int_t main(Int_t argc, char **argv){
 //    }
 
     
-    // sample energy from graph
-    // choose a random graph
-    Int_t g=(Int_t)randomizer->Uniform(graphCounter);
-    
-    if(g<0 || g>=graphCounter){
-      cout << "Invalid graph number " << g << endl;
-      return 0;
-    }
     
     // at the moment: only uniform theta distribution
     // todo: add physics here!!!!!
     lightTheta=randomizer->Uniform(180.0);
-    lightEnergy=graph[g]->Eval(lightTheta);
+
+    if(info->ProfileBeamE()){
+      Int_t g=(Int_t)randomizer->Uniform(numberOfStates);
+      lightEnergy=tempGraph[g]->Eval(lightTheta);
+    }else{
+      // sample energy from graph
+      // choose a random graph
+      Int_t g=(Int_t)randomizer->Uniform(graphCounter);  
+      //if(g<0 || g>=graphCounter){
+      //  cout << "Invalid graph number " << g << endl;
+      //  return 0;
+      //}
+      lightEnergy=graph[g]->Eval(lightTheta);
+    }
+
+    
+    //lightEnergy=graph[g]->Eval(lightTheta);             
+    //lightEnergy=tempGraph[0]->Eval(lightTheta);
 
     // continue in rad
     // as required for geant4
@@ -462,9 +518,28 @@ Int_t main(Int_t argc, char **argv){
     lightPdgId=2212; //proton
 
     events->Fill();
-  }
 
+//    for(Int_t j=0; j<numberOfStates; j++){
+//      delete tempGraph[j];
+//    }
+    if(info->ProfileBeamE()){
+      tempFile->Close();
+//      delete tempFile;
+      system(Form("rm -f %s", tempFileName));
+    }
 
+    if(i%1000==0){
+      outfile->cd();
+      events->Write("events");
+    }
+
+  } // end of loop
+ 
+  cout << endl; 
+  cout << "Event generation done!" << endl;
+  watch->Stop();
+  cout << "Took: real time " << watch->RealTime() << "sec., CPU time " << watch->CpuTime() << " sec." << endl;
+  cout << endl; 
 
   outfile->cd();
 
