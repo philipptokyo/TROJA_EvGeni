@@ -1,5 +1,5 @@
-#ifndef InputInfo_h
-#define InputInfo_h
+#ifndef InputInfo_hh
+#define InputInfo_hh
 
 #include "LibPerso.h"
 

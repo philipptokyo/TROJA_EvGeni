@@ -1,5 +1,5 @@
 
-#include "InputInfo.h"
+#include "InputInfo.hh"
 
 using namespace std;
 

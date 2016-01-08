@@ -9,8 +9,8 @@
 
 
 
-#include "main.h"
-#include "InputInfo.h"
+#include "main.hh"
+#include "InputInfo.hh"
 
 #include "LibPerso.h"
 
