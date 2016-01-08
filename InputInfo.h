@@ -7,16 +7,20 @@ class InputInfo
 {
 	public:
 	
+        //todo: private variables plus getter and setter
+
+        // file names
+        char fOutFileNameReaction[500];
+	char fOutFileNameMakeEvents[500];
+	char fOutFileNameTroja[500];
+        char fOutFileNameAnalysis[500];
+        char fOedoSimFileName[500];
+        
+        // general, for all programs
+        Int_t fNumberEvents;
 	Float_t fBeamEnergy;
-	
-	char fInfilenameFromReaction[200];
-	
-	char fRootfilename[200];
-	
-	Int_t fNumberEvents;
-        
-        char fOedoSimFileName[300];
-        
+
+        // event generator related
         Bool_t HaveOedoSimFileName(){return fHaveOedoSimFileName;};
         Bool_t ProfileBeamE(){return fProfileE;};
         Bool_t ProfileBeamX(){return fProfileX;};
@@ -24,13 +28,26 @@ class InputInfo
         Bool_t ProfileBeamA(){return fProfileA;};
         Bool_t ProfileBeamB(){return fProfileB;};
 	
+        //analysis related
+        Float_t fResTargetX, fResTargetY, fResTargetZ; // should be obtained from beam tracking detector(s)
+        Float_t fResTargetA, fResTargetB; // should be obtained from beam tracking detector(s)
+        Float_t fResDet1X, fResDet1Y, fResDet1Z; // this should be given in detector coordinates
+        Float_t fResDet1E; // energy (loss) resolution in first detector
+        Float_t fResDet2E; // energy (loss) resolution in second detector
+        Float_t fResBeamE;
+	
+
+        //
         void parse(char filename[100]);
 	
 	InputInfo();
 	~InputInfo();
 	
+        
+        
         private:
        
+        
         Bool_t fHaveOedoSimFileName; 
         Bool_t fProfileE, fProfileX, fProfileY, fProfileA, fProfileB; 
         	

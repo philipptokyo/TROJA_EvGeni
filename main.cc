@@ -75,9 +75,9 @@ Int_t main(Int_t argc, char **argv){
   TRandom3 *randomizer=new TRandom3();  
   randomizer->SetSeed(0);
   
-  TFile* infile = TFile::Open(info->fInfilenameFromReaction,"read");
+  TFile* infile = TFile::Open(info->fOutFileNameReaction,"read");
   
-  TFile* outfile = new TFile(info->fRootfilename, "recreate");
+  TFile* outfile = new TFile(info->fOutFileNameMakeEvents, "recreate");
   
   
   if(!infile){
@@ -322,9 +322,15 @@ Int_t main(Int_t argc, char **argv){
   for(Int_t i=0; i<info->fNumberEvents; i++){
 
     eventNumber=i; // for the tree
-
-    if(i%1000==0){
-      printf("%i events generated (%i requested)\n", i, info->fNumberEvents); 
+    
+    if(info->ProfileBeamE()){
+     if(i%1000==0){
+       printf("%i events generated (%i requested)\n", i, info->fNumberEvents); 
+     }
+    }else{
+     if(i%10000==0){
+       printf("%i events generated (%i requested)\n", i, info->fNumberEvents);
+     }
     }
 
 
@@ -526,11 +532,14 @@ Int_t main(Int_t argc, char **argv){
       tempFile->Close();
 //      delete tempFile;
       system(Form("rm -f %s", tempFileName));
-    }
-
-    if(i%1000==0){
-      outfile->cd();
-      events->Write("events");
+      
+      // profiling is very time consuming a.t.m.
+      // save events for the case of any crash
+      if(i%1000==0){
+        cout << "Info: Writing events to file ..." << endl;
+        outfile->cd();
+        events->Write("events");
+      }
     }
 
   } // end of loop
@@ -547,7 +556,7 @@ Int_t main(Int_t argc, char **argv){
 
   outfile->Close();
   
-  printf("Events written to file '%s'\n", info->fRootfilename);
+  printf("Events written to file '%s'\n", info->fOutFileNameMakeEvents);
   printf("Thank you and good by!\n");
   
   // if histograms shall be plotted, run theApp
