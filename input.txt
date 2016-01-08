@@ -16,6 +16,15 @@ beam_profile_file_oedo /mnt/raid/OEDO/OEDO_Matsushita/132Sn/3rd_order/oedo_132sn
 // default 100, if nothing is set
 number_events 100000
 
+projectile_A 132
+projectile_Z 48
+target_A 2
+target_Z 1
+light_A 1
+light_Z 1
+number_of_states 2
+max_excitation_energy 5.0
+
 // beam energy per nucleon in MeV/u
 // default is 10.0 MeV/u
 beam_energy 10.0

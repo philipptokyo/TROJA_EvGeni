@@ -11,21 +11,6 @@
 
 #include "CLibs.h"
 
-// #include        "Buttons.h"
-// 
-// #include	<cmath>
-// #include	<cstdio>
-// #include	<cstdlib>
-// #include	<ctime>
-// 
-// #include	<fstream>
-// #include	<iostream>
-// #include	<math.h>
-// 
-// #include        "RQ_OBJECT.h"
-// 
-// #include	<sstream>
-// #include	<string>
 
 
 // ROOT libs

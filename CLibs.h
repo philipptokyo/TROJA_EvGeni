@@ -13,10 +13,11 @@
 #include	<fstream>
 #include	<iostream>
 #include	<math.h>
-
+#include        <memory>
 // #include        "RQ_OBJECT.h"
 
 #include	<sstream>
+#include	<stdio.h>
 #include	<string>
 
 #endif

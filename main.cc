@@ -49,7 +49,80 @@ Int_t main(Int_t argc, char **argv){
   
   //get information from textfile
   info->parse(argv[1]);
+  
 
+  // todo: take them from input file
+  // todo: write a header tree to the root file
+  Int_t projA=132, projZ=50, targetA=2, targetZ=1, lightA=1, lightZ=1;
+  Int_t numberOfStates=2;
+  Float_t maxExEnergy=5.0;
+  
+  if(targetZ!=lightZ){
+    cout << "Dev Info: only neutron transfer is implemented so far!" << endl;
+    cout << "Target Z and light ejectile Z are not the same (" << targetZ << " and " << lightZ << ", resp.)!" << endl;
+    cout << "Choose another reaction channel!" << endl;
+    return 0;
+  }
+
+  char tempFileName[300], tempCommand[500];
+  sprintf(tempFileName, "/home/philipp/programme/makeEvents/deleteme.root");
+  sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p %d %d -t %d %d -tr %d %f %d -e %f -o %s ", projA-projZ, projZ, targetA-targetZ, targetZ, targetA-lightA,  maxExEnergy, numberOfStates, 1320.0, tempFileName);
+
+  cout << "Executing command: " << tempCommand << endl;
+  
+   
+  Float_t projMass=0.0, targetMass=0.0, lightMass=0.0, heavyMass=0.0, qValue=0.0; 
+  FILE *fp;
+  char path[1000];
+ 
+  /* Open the command for reading. */
+  fp = popen(tempCommand, "r");
+  if (fp == NULL) {
+    printf("Failed to run command\n" );
+    return 0;
+  }
+  
+  char temp[10][500];
+  /* Read the output a line at a time - output it. */
+  while (fgets(path, sizeof(path)-1, fp) != NULL) {
+    //printf("%s", path);
+ 
+    istringstream iss(path);
+    for(Int_t i=0; i<10; i++){iss >> temp[i];}
+    
+    // collecting information about the masses
+    if(strcmp(temp[0],"recoil")==0 && strcmp(temp[1],"Z")==0 && strcmp(temp[3],"N")==0){
+      heavyMass = atof(temp[5]);
+    }
+    if(strcmp(temp[0],"ejectile")==0 && strcmp(temp[1],"Z")==0 && strcmp(temp[3],"N")==0){
+      lightMass = atof(temp[5]);
+    }
+    if(strcmp(temp[0],"Qvalue")==0){
+      qValue = atof(temp[1]);
+    }
+    if(strcmp(temp[0],"proj")==0 && strcmp(temp[2],"targ")==0){
+      projMass = atof(temp[1]);
+      targetMass = atof(temp[3]);
+    }
+  }
+
+ /* close */
+ pclose(fp); 
+  
+ printf("Obtained: projMass %f, targetMass %f, heavyMass %f, lightMass %f, qValue %f\n", projMass, targetMass, lightMass, heavyMass, qValue); 
+  
+  
+  
+  
+  
+  
+  
+  
+  cout << endl; cout << "return for testing ..." << endl;
+  return 0;  
+  
+  
+   
 
   // make some cross checks of the inputs
   if(!(info->HaveOedoSimFileName()) && 
@@ -188,75 +261,75 @@ Int_t main(Int_t argc, char **argv){
   
   
   
-  // create a histogram
-  // from the graphs/splines  
-  TH1F* hist0 = graph[0]->GetHistogram();
-
-  Int_t nbins = hist0->GetXaxis()->GetNbins();
-  Float_t ymax=0.0;
-
-  // get information for a generic bining of the energy (y-axix)
-  for(Int_t b=0; b<nbins; b++){
-
-    Float_t center = hist0->GetXaxis()->GetBinCenter(b);
-    Float_t content=graph[0]->Eval(center);
-
-    //cout << "Bin " << b << ", center " << center << ", content " << content << endl;
-    
-    //get maximum energy
-    if(content>ymax){
-      ymax=content;
-    }
-
-  }
-  
-  // generic bining for the energy (y-axis)
-  Float_t ymaxtmp=ymax, oom=0.0;
-  while(ymaxtmp>10.){
-    ymaxtmp/=10.;
-    oom+=1.0;
-  }
-  
-  ymaxtmp=(Int_t)ymaxtmp + 1.0;
-  // cout << "ymax " << ymax << ", ymaxtmp " << ymaxtmp << ", oom " << oom  << endl;
-  
-  // choose 100 keV binning for the energy
-  ymax=ymaxtmp*TMath::Power(10.0,oom);
-  
-  // cout << "binning to " << ymax << endl;
-  
-  TH2F* histAll=new TH2F("histAll","E vs. Th_lab, all Graphs",
-      nbins,hist0->GetXaxis()->GetBinLowEdge(1), hist0->GetXaxis()->GetBinLowEdge(nbins+1),
-      (Int_t)(ymax*100.0), 0.0, ymax
-      );
-  
-  
-//   for(Int_t i=0; i<nbins; i++){
-//     cout << "Bin " << i << " hist0 lower " << hist0->GetXaxis()->GetBinLowEdge(i) << ", histAll " << histAll->GetXaxis()->GetBinLowEdge(i) << endl;
+//   // create a histogram
+//   // from the graphs/splines  
+//   TH1F* hist0 = graph[0]->GetHistogram();
+// 
+//   Int_t nbins = hist0->GetXaxis()->GetNbins();
+//   Float_t ymax=0.0;
+// 
+//   // get information for a generic bining of the energy (y-axix)
+//   for(Int_t b=0; b<nbins; b++){
+// 
+//     Float_t center = hist0->GetXaxis()->GetBinCenter(b);
+//     Float_t content=graph[0]->Eval(center);
+// 
+//     //cout << "Bin " << b << ", center " << center << ", content " << content << endl;
+//     
+//     //get maximum energy
+//     if(content>ymax){
+//       ymax=content;
+//     }
+// 
 //   }
-  
-  
-  
-  // fill the 2d histogram with all graphs
-  for(Int_t b=0; b<nbins; b++){
-    
-    for(Int_t g=0; g<graphCounter; g++){
-
-      Float_t th=histAll->GetXaxis()->GetBinCenter(b);
-      histAll->Fill(th,graph[g]->Eval(th));
-
-    }
-    
-  }
-  
-  // histAll->Draw("colz");
-
-  histAll->GetXaxis()->SetRangeUser(0.0, 180.0);  
-  
-  // save histogram to output rootfile
-  outfile->cd();
-  histAll->Write();
-  cout << "All graphs converted to one histogram!" << endl;
+//   
+//   // generic bining for the energy (y-axis)
+//   Float_t ymaxtmp=ymax, oom=0.0;
+//   while(ymaxtmp>10.){
+//     ymaxtmp/=10.;
+//     oom+=1.0;
+//   }
+//   
+//   ymaxtmp=(Int_t)ymaxtmp + 1.0;
+//   // cout << "ymax " << ymax << ", ymaxtmp " << ymaxtmp << ", oom " << oom  << endl;
+//   
+//   // choose 100 keV binning for the energy
+//   ymax=ymaxtmp*TMath::Power(10.0,oom);
+//   
+//   // cout << "binning to " << ymax << endl;
+//   
+//   TH2F* histAll=new TH2F("histAll","E vs. Th_lab, all Graphs",
+//       nbins,hist0->GetXaxis()->GetBinLowEdge(1), hist0->GetXaxis()->GetBinLowEdge(nbins+1),
+//       (Int_t)(ymax*100.0), 0.0, ymax
+//       );
+//   
+//   
+// //   for(Int_t i=0; i<nbins; i++){
+// //     cout << "Bin " << i << " hist0 lower " << hist0->GetXaxis()->GetBinLowEdge(i) << ", histAll " << histAll->GetXaxis()->GetBinLowEdge(i) << endl;
+// //   }
+//   
+//   
+//   
+//   // fill the 2d histogram with all graphs
+//   for(Int_t b=0; b<nbins; b++){
+//     
+//     for(Int_t g=0; g<graphCounter; g++){
+// 
+//       Float_t th=histAll->GetXaxis()->GetBinCenter(b);
+//       histAll->Fill(th,graph[g]->Eval(th));
+// 
+//     }
+//     
+//   }
+//   
+//   // histAll->Draw("colz");
+// 
+//   histAll->GetXaxis()->SetRangeUser(0.0, 180.0);  
+//   
+//   // save histogram to output rootfile
+//   outfile->cd();
+//   histAll->Write();
+//   cout << "All graphs converted to one histogram!" << endl;
   
 
 
@@ -388,8 +461,8 @@ Int_t main(Int_t argc, char **argv){
       beamY=0.0;
       beamZ=0.0;
       beamE=info->fBeamEnergy;
-      beamMass=132;  // mass number
-      beamCharge=50; // charge number
+      beamMass=projA;   // mass number
+      beamCharge=projZ; // charge number
     }
 
 
@@ -419,10 +492,7 @@ Int_t main(Int_t argc, char **argv){
     }
 
 
-    char tempFileName[100];
     TFile* tempFile;
-    Int_t numberOfStates=2;
-    Float_t maxExEnergy=5.0;
     TGraph* tempGraph[numberOfStates];
 
     if(info->ProfileBeamE()){
@@ -433,8 +503,7 @@ Int_t main(Int_t argc, char **argv){
         continue; // bad hack! todo!
       }
 
-      // test: run shell command and execute 'reaction'
-      char tempCommand[500];
+      // run shell command / execute 'reaction'
       sprintf(tempFileName, "/home/philipp/programme/makeEvents/132Sndp_deleteme.root");
 
       //sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p 82 50 -t 1 1 -tr 1 %f %d -e %f -o %s",maxExEnergy, numberOfStates, beamE*(Float_t)beamMass, tempFileName);
