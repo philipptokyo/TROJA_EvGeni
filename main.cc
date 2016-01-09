@@ -53,9 +53,20 @@ Int_t main(Int_t argc, char **argv){
 
   // todo: take them from input file
   // todo: write a header tree to the root file
-  Int_t projA=132, projZ=50, targetA=2, targetZ=1, lightA=1, lightZ=1;
-  Int_t numberOfStates=2;
-  Float_t maxExEnergy=5.0;
+  //Int_t projA=132, projZ=50, targetA=2, targetZ=1, lightA=1, lightZ=1;
+  //Int_t numberOfStates=2;
+  //Float_t maxExEnergy=5.0;
+  Int_t projA=info->fProjA;
+  Int_t projZ=info->fProjZ;
+  Int_t targetA=info->fTargetA;
+  Int_t targetZ=info->fTargetZ;
+  Int_t lightA=info->fLightA;
+  Int_t lightZ=info->fLightZ;
+  
+  Int_t numberOfStates=info->fNumberOfStates;
+  Float_t maxExEnergy=info->fMaxExEnergy;
+  
+  Float_t projMass=0.0, targetMass=0.0, lightMass=0.0, heavyMass=0.0, qValue=0.0; 
   
   if(targetZ!=lightZ){
     cout << "Dev Info: only neutron transfer is implemented so far!" << endl;
@@ -65,13 +76,13 @@ Int_t main(Int_t argc, char **argv){
   }
 
   char tempFileName[300], tempCommand[500];
-  sprintf(tempFileName, "/home/philipp/programme/makeEvents/deleteme.root");
+  //sprintf(tempFileName, "/home/philipp/programme/makeEvents/deleteme.root");
+  sprintf(tempFileName, "%s", info->fOutFileNameReaction);
   sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p %d %d -t %d %d -tr %d %f %d -e %f -o %s ", projA-projZ, projZ, targetA-targetZ, targetZ, targetA-lightA,  maxExEnergy, numberOfStates, 1320.0, tempFileName);
 
   cout << "Executing command: " << tempCommand << endl;
   
    
-  Float_t projMass=0.0, targetMass=0.0, lightMass=0.0, heavyMass=0.0, qValue=0.0; 
   FILE *fp;
   char path[1000];
  
@@ -92,10 +103,10 @@ Int_t main(Int_t argc, char **argv){
     
     // collecting information about the masses
     if(strcmp(temp[0],"recoil")==0 && strcmp(temp[1],"Z")==0 && strcmp(temp[3],"N")==0){
-      heavyMass = atof(temp[5]);
+      lightMass = atof(temp[5]);
     }
     if(strcmp(temp[0],"ejectile")==0 && strcmp(temp[1],"Z")==0 && strcmp(temp[3],"N")==0){
-      lightMass = atof(temp[5]);
+      heavyMass = atof(temp[5]);
     }
     if(strcmp(temp[0],"Qvalue")==0){
       qValue = atof(temp[1]);
@@ -109,17 +120,8 @@ Int_t main(Int_t argc, char **argv){
  /* close */
  pclose(fp); 
   
- printf("Obtained: projMass %f, targetMass %f, heavyMass %f, lightMass %f, qValue %f\n", projMass, targetMass, lightMass, heavyMass, qValue); 
+ printf("Obtained masses: projectile %f, target %f, light ejectile %f, heavy ejectile %f; Q-value %f\n", projMass, targetMass, lightMass, heavyMass, qValue); 
   
-  
-  
-  
-  
-  
-  
-  
-  cout << endl; cout << "return for testing ..." << endl;
-  return 0;  
   
   
    
@@ -148,21 +150,36 @@ Int_t main(Int_t argc, char **argv){
   TRandom3 *randomizer=new TRandom3();  
   randomizer->SetSeed(0);
   
-  TFile* infile = TFile::Open(info->fOutFileNameReaction,"read");
   
   TFile* outfile = new TFile(info->fOutFileNameMakeEvents, "recreate");
   
+  TTree* treeHeader = new TTree();
+  treeHeader->Branch("projA", &projA, "projA/I");
+  treeHeader->Branch("projZ", &projZ, "projZ/I");
+  treeHeader->Branch("targetA", &targetA, "targetA/I");
+  treeHeader->Branch("targetZ", &targetZ, "targetZ/I");
+  treeHeader->Branch("lightA", &lightA, "lightA/I");
+  treeHeader->Branch("lightZ", &lightZ, "lightZ/I");
+  treeHeader->Branch("projMass", &projMass, "projMass/F");
+  treeHeader->Branch("targetMass", &targetMass, "targetMass/F");
+  treeHeader->Branch("lightMass", &lightMass, "lightMass/F");
+  treeHeader->Branch("heavyMass", &heavyMass, "heavyMass/F");
+  treeHeader->Branch("qValue", &qValue, "qValue/F");
+  
+  treeHeader->Fill();
+  treeHeader->Write("header");
+
+  
+  TFile* infile = TFile::Open(info->fOutFileNameReaction,"read");
   
   if(!infile){
-    
-   cout << "Rootfile not found!" << endl;
+   cout << "Rootfile from reactions not found!" << endl;
    return 0;
-  
   }
   
   Bool_t foundGraph = true;
   Int_t graphCounter=0;
-  const Int_t graphMax=1000;
+  const Int_t graphMax=100;
 
   TGraph* graph[graphMax];
   for(Int_t i=0; i<graphMax; i++){
@@ -188,7 +205,7 @@ Int_t main(Int_t argc, char **argv){
 
     
     // stopper
-    if(graphCounter>100000){
+    if(graphCounter>graphMax){
       cout << "Error while finding graphs in rootfile! Aborting..." << endl;
       abort();
     }
@@ -205,7 +222,7 @@ Int_t main(Int_t argc, char **argv){
   
   //Float_t fhxout[14]={0.0}; // full sim file
   
-  Int_t beamMass=0, beamCharge=0;
+  //Int_t beamMass=0, beamCharge=0;
   Float_t beamE=10.0;    // in MeV/u
   Float_t beamX=0.0, beamY=0.0, beamZ=0.0; // position in mm
   Float_t beamA=0.0, beamB=0.0; // angle in mrad
@@ -226,8 +243,8 @@ Int_t main(Int_t argc, char **argv){
     fileBeamProfile=TFile::Open(info->fOedoSimFileName, "read");
 
     if(!fileBeamProfile){
-      cout << "Error! OEDO beam simulation file given, but not found! " << endl;
-      cout << "Please check the file name in 'beam_profile_file_oedo' or comment out this line!" << endl;
+      cout << "Error! OEDO beam simulation file not found! " << endl;
+      cout << "Please check the file name 'beam_profile_file_oedo' in the input text file!" << endl;
       return 0;
     }
 
@@ -242,8 +259,8 @@ Int_t main(Int_t argc, char **argv){
     }
 
     //treeBeamProfile->SetBranchAddress("fhxout", fhxout); // full sim file
-    treeBeamProfile->SetBranchAddress("mass", &beamMass); // shortened sim file
-    treeBeamProfile->SetBranchAddress("z", &beamCharge);  // shortened sim file
+    treeBeamProfile->SetBranchAddress("mass", &projA); // shortened sim file
+    treeBeamProfile->SetBranchAddress("z", &projZ);  // shortened sim file
     treeBeamProfile->SetBranchAddress("energy", &beamE);  // shortened sim file
     treeBeamProfile->SetBranchAddress("x", &beamX);       // shortened sim file
     treeBeamProfile->SetBranchAddress("y", &beamY);       // shortened sim file
@@ -365,8 +382,8 @@ Int_t main(Int_t argc, char **argv){
   events->Branch("lightPhi",&lightPhi, "lightPhi/D");
   
   // projectile data
-  events->Branch("beamMassNumber", &beamMass, "beamMassNumber/I");
-  events->Branch("beamChargeNumber", &beamCharge, "beamChargeNumber/I");
+  events->Branch("beamMassNumber", &projA, "beamMassNumber/I");
+  events->Branch("beamChargeNumber", &projZ, "beamChargeNumber/I");
   events->Branch("beamEnergy", &beamE, "beamEnergy/F");
   events->Branch("beamX", &beamX, "beamX/F");
   events->Branch("beamY", &beamY, "beamY/F");
@@ -383,7 +400,7 @@ Int_t main(Int_t argc, char **argv){
     printf("Error! Invalid number of events given: %i\nAboring...\n",info->fNumberEvents);
     abort();
   }else{
-    printf("Start generating events.\n");
+    printf("Start generating events...\n");
   }
   
 
@@ -461,8 +478,6 @@ Int_t main(Int_t argc, char **argv){
       beamY=0.0;
       beamZ=0.0;
       beamE=info->fBeamEnergy;
-      beamMass=projA;   // mass number
-      beamCharge=projZ; // charge number
     }
 
 
@@ -507,11 +522,11 @@ Int_t main(Int_t argc, char **argv){
       sprintf(tempFileName, "/home/philipp/programme/makeEvents/132Sndp_deleteme.root");
 
       //sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p 82 50 -t 1 1 -tr 1 %f %d -e %f -o %s",maxExEnergy, numberOfStates, beamE*(Float_t)beamMass, tempFileName);
-      sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p 82 50 -t 1 1 -tr 1 %f %d -e %f -o %s > /dev/null",maxExEnergy, numberOfStates, beamE*(Float_t)beamMass, tempFileName);
+      //sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p 82 50 -t 1 1 -tr 1 %f %d -e %f -o %s > /dev/null",maxExEnergy, numberOfStates, beamE*(Float_t)beamMass, tempFileName);
+      sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p %d %d -t %d %d -tr %d %f %d -e %f -o %s > /dev/null ", projA-projZ, projZ, targetA-targetZ, targetZ, targetA-lightA,  maxExEnergy, numberOfStates, beamE*(Float_t)projA, tempFileName);
       
-      //cout << "Executing command: " << tempCommand << endl;
+      cout << "Executing command: " << tempCommand << endl;
       
-      //popen(tempCommand,"");
       system(tempCommand);
       
       tempFile = TFile::Open(tempFileName,"read");
