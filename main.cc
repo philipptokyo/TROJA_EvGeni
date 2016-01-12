@@ -133,14 +133,6 @@ Int_t main(Int_t argc, char **argv){
     return 0;
   }
 
-  if(info->ProfileBeamE()){
-    cout << "WARNING! Profiling of beam energy is requested. " << endl;
-    cout << "This option is not yet implemented with respect to the angular distribution of the light particle" << endl;
-    cout << "Omitting this option!" << endl;
-    cout << endl;
-  }
-
-
 
 
 
@@ -186,9 +178,11 @@ Int_t main(Int_t argc, char **argv){
     graph[i] = new TGraph();
   }
   
+  
+  char tmp[20];
+
   while(foundGraph){
     
-    char tmp[20];
     sprintf(tmp,"EvsTh_lab_%i",graphCounter);
     graph[graphCounter] = (TGraph*)infile->Get(tmp);
     
@@ -366,7 +360,8 @@ Int_t main(Int_t argc, char **argv){
   Double_t lightEnergy=0.0, // energy in MeV 
            lightTheta=0.0, // theta in rad
            lightPhi=0.0; // phi in rad
-  Int_t lightPdgId=2212;
+  Int_t lightPdgId=2212; //proton
+  //Int_t heavyPdgId=1000501330; // 133Sn
   Int_t eventNumber=0;
 
   TTree *events = new TTree();
@@ -382,8 +377,8 @@ Int_t main(Int_t argc, char **argv){
   events->Branch("lightPhi",&lightPhi, "lightPhi/D");
   
   // projectile data
-  events->Branch("beamMassNumber", &projA, "beamMassNumber/I");
-  events->Branch("beamChargeNumber", &projZ, "beamChargeNumber/I");
+  //events->Branch("beamMassNumber", &projA, "beamMassNumber/I");
+  //events->Branch("beamChargeNumber", &projZ, "beamChargeNumber/I");
   events->Branch("beamEnergy", &beamE, "beamEnergy/F");
   events->Branch("beamX", &beamX, "beamX/F");
   events->Branch("beamY", &beamY, "beamY/F");
@@ -513,9 +508,9 @@ Int_t main(Int_t argc, char **argv){
     if(info->ProfileBeamE()){
 
       if(beamE<maxExEnergy){
-        //cout << "beamE = " << beamE << endl;
+        cout << "Beam energy = " << beamE << " is too low! Set to 10 MeV/u! (todo: fix this!!!!!!!!!!)" << endl;
         notProcessed++;
-        continue; // bad hack! todo!
+        //continue; // bad hack! todo!
       }
 
       // run shell command / execute 'reaction'
@@ -523,9 +518,10 @@ Int_t main(Int_t argc, char **argv){
 
       //sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p 82 50 -t 1 1 -tr 1 %f %d -e %f -o %s",maxExEnergy, numberOfStates, beamE*(Float_t)beamMass, tempFileName);
       //sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p 82 50 -t 1 1 -tr 1 %f %d -e %f -o %s > /dev/null",maxExEnergy, numberOfStates, beamE*(Float_t)beamMass, tempFileName);
+      //sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p %d %d -t %d %d -tr %d %f %d -e %f -o %s ", projA-projZ, projZ, targetA-targetZ, targetZ, targetA-lightA,  maxExEnergy, numberOfStates, beamE*(Float_t)projA, tempFileName);
       sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p %d %d -t %d %d -tr %d %f %d -e %f -o %s > /dev/null ", projA-projZ, projZ, targetA-targetZ, targetZ, targetA-lightA,  maxExEnergy, numberOfStates, beamE*(Float_t)projA, tempFileName);
       
-      cout << "Executing command: " << tempCommand << endl;
+      //cout << "Executing command: " << tempCommand << endl;
       
       system(tempCommand);
       
@@ -537,7 +533,7 @@ Int_t main(Int_t argc, char **argv){
       //TGraph* tempGraph[numberOfStates];
       for(Int_t j=0; j<numberOfStates; j++){
         tempGraph[j]=new TGraph();
-        char tmp[20];
+        //char tmp[20];
         sprintf(tmp,"EvsTh_lab_%i",j);
         tempGraph[j] = (TGraph*)tempFile->Get(tmp);
         
@@ -553,6 +549,12 @@ Int_t main(Int_t argc, char **argv){
     }else{
       beamE=info->fBeamEnergy;
     }
+
+
+    // determine PDG ID of light ejectile
+    sprintf(tmp,"1000%02d%03d0",lightZ,lightA);
+    lightPdgId=atoi(tmp);
+    //printf("Outgoing PDG ID: char %s, int %i\n", tmp, lightPdgId);
 
 
 
@@ -605,7 +607,7 @@ Int_t main(Int_t argc, char **argv){
     lightTheta=direction.Theta();
     lightPhi=direction.Phi();
 
-    lightPdgId=2212; //proton
+    //lightPdgId=2212; //proton
 
     events->Fill();
 
