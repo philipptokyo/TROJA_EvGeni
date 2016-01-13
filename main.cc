@@ -508,8 +508,9 @@ Int_t main(Int_t argc, char **argv){
     if(info->ProfileBeamE()){
 
       if(beamE<maxExEnergy){
-        cout << "Beam energy = " << beamE << " is too low! Set to 10 MeV/u! (todo: fix this!!!!!!!!!!)" << endl;
+        cout << "Beam energy = " << beamE << " is too low! Will be set to " << info->fBeamEnergy << " MeV/u! (todo: fix this!!!!!!!!!!)" << endl;
         notProcessed++;
+        beamE=info->fBeamEnergy;
         //continue; // bad hack! todo!
       }
 
@@ -621,11 +622,11 @@ Int_t main(Int_t argc, char **argv){
       
       // profiling is very time consuming a.t.m.
       // save events for the case of any crash
-      if(i%1000==0){
-        cout << "Info: Writing events to file ..." << endl;
-        outfile->cd();
-        events->Write("events");
-      }
+      //if(i%1000==0){
+      //  cout << "Info: Writing events to file ..." << endl;
+      //  outfile->cd();
+      //  events->Write("events");
+      //}
     }
 
   } // end of loop
