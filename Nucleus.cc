@@ -152,3 +152,12 @@ double Nucleus::GetRadius(){
 const char* Nucleus::GetSymbol(){
   return fSymbol.c_str();
 }
+
+//Nucleus::~Nucleus(){
+//
+//}
+//
+//Nucleus::Nucleus(){
+//
+//}
+

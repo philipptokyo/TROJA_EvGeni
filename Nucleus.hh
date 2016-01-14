@@ -17,6 +17,8 @@ class Nucleus : public TObject{
   Nucleus(char*);
   Nucleus(int, int, double, const char*);
   Nucleus(int Z, int N, char*);
+  //Nucleus();
+  //~Nucleus();
   void SetZ(int);
   void SetN(int);
   void SetMassExcess(double);  
@@ -37,6 +39,6 @@ class Nucleus : public TObject{
   double fMass;
   double fMassExcess;
   string fSymbol;
-  ClassDef(Nucleus,1);
+  //ClassDef(Nucleus,1);
 };
 #endif

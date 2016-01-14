@@ -11,7 +11,8 @@
 
 #include "main.hh"
 #include "InputInfo.hh"
-
+#include "Nucleus.hh"
+#include "Kinematics.hh"
 #include "LibPerso.h"
 
 using namespace std;
@@ -39,7 +40,7 @@ Int_t main(Int_t argc, char **argv){
   }
   
   if(argc!=2){
-  	cout << "Please give 1 input argument: text file with input information, e.g. './makeEvents input/input.txt' " << endl; 
+  	cout << "Please give 1 input argument: text file with input information, e.g. './makeEvents input.txt' " << endl; 
   	return 0;
   }
   
@@ -51,8 +52,18 @@ Int_t main(Int_t argc, char **argv){
   info->parse(argv[1]);
   
 
-  // todo: take them from input file
-  // todo: write a header tree to the root file
+  //Float_t fhxout[14]={0.0}; // full sim file
+  
+  //Int_t beamMass=0, beamCharge=0;
+  Float_t beamE=info->fBeamEnergy;    // in MeV/u
+  Float_t beamX=0.0, beamY=0.0, beamZ=0.0; // position in mm
+  Float_t beamA=0.0, beamB=0.0; // angle in mrad
+  Float_t beamTheta=0.0, beamPhi=0.0; // in rad
+  Int_t beamNoEvents=0;
+  
+
+
+
   //Int_t projA=132, projZ=50, targetA=2, targetZ=1, lightA=1, lightZ=1;
   //Int_t numberOfStates=2;
   //Float_t maxExEnergy=5.0;
@@ -63,8 +74,23 @@ Int_t main(Int_t argc, char **argv){
   Int_t lightA=info->fLightA;
   Int_t lightZ=info->fLightZ;
   
+  const Int_t maxNumberOfStates=5;
   Int_t numberOfStates=info->fNumberOfStates;
+  if(numberOfStates>maxNumberOfStates){
+    cout << "Error: maximum number of states is " << maxNumberOfStates << "! You requested " << numberOfStates << endl;
+    return 0;
+  }
   Float_t maxExEnergy=info->fMaxExEnergy;
+
+  Float_t stateEnergy[maxNumberOfStates]={0.0};
+  for(Int_t s=0; s<numberOfStates; s++){
+    stateEnergy[s]=(Float_t)s * maxExEnergy / (Float_t)(numberOfStates-1);
+    printf("  state %d, energy %f\n", s, stateEnergy[s]);
+    if(!(info->ProfileBeamE()) && stateEnergy[s]>beamE){
+      cout << "Error: state energy is larger than beam energy!" << endl;
+      return 0;
+    }
+  }
   
   Float_t projMass=0.0, targetMass=0.0, lightMass=0.0, heavyMass=0.0, qValue=0.0; 
   
@@ -74,53 +100,121 @@ Int_t main(Int_t argc, char **argv){
     cout << "Choose another reaction channel!" << endl;
     return 0;
   }
-
-  char tempFileName[300], tempCommand[500];
-  //sprintf(tempFileName, "/home/philipp/programme/makeEvents/deleteme.root");
-  sprintf(tempFileName, "%s", info->fOutFileNameReaction);
-  sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p %d %d -t %d %d -tr %d %f %d -e %f -o %s ", projA-projZ, projZ, targetA-targetZ, targetZ, targetA-lightA,  maxExEnergy, numberOfStates, 1320.0, tempFileName);
-
-  cout << "Executing command: " << tempCommand << endl;
   
+  char* massFile = (char*)"/home/philipp/programme/reaction/mass.dat";
+
+  Nucleus* proj = new Nucleus(projZ, projA-projZ, massFile);
+  Nucleus* targ = new Nucleus(targetZ, targetA-targetZ, massFile);
+  Nucleus* reco = new Nucleus(lightZ, lightA-lightZ, massFile);
+  Nucleus* ejec = new Nucleus(projZ, projA-projZ+(targetA-lightA), massFile);
+
+  //printf("ejec A=%d, mass=%f\n", ejec->GetA(), ejec->GetMass());
+  //printf("proj A=%d, mass=%f\n", proj->GetA(), proj->GetMass());
+  //printf("reco A=%d, mass=%f\n", reco->GetA(), reco->GetMass());
+  //printf("targ A=%d, mass=%f\n", targ->GetA(), targ->GetMass());
+
+  projMass=proj->GetMass();
+  targetMass=targ->GetMass();
+  lightMass=reco->GetMass();
+  heavyMass=ejec->GetMass();
+
+
+  Kinematics* reaction[maxNumberOfStates];
+  for(Int_t s=0; s<numberOfStates; s++){
+     reaction[s] = new Kinematics(proj, targ, reco, ejec, beamE*projA, stateEnergy[s]);
+  }
+
+  qValue=reaction[0]->GetQValue();
+  
+  //printf("Elab is %f\n", reaction->ELab(90.0/180.0*TMath::Pi(), 2));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//  cout << "Stopped!" << endl;
+//  return 0;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//  char tempFileName[300], tempCommand[500];
+//  //sprintf(tempFileName, "/home/philipp/programme/makeEvents/deleteme.root");
+//  sprintf(tempFileName, "%s", info->fOutFileNameReaction);
+//  sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p %d %d -t %d %d -tr %d %f %d -e %f -o %s ", projA-projZ, projZ, targetA-targetZ, targetZ, targetA-lightA,  maxExEnergy, numberOfStates, beamE*projA, tempFileName);
+//
+//  cout << "Executing command: " << tempCommand << endl;
+//  
+//   
+//  FILE *fp;
+//  char path[1000];
+// 
+//  /* Open the command for reading. */
+//  fp = popen(tempCommand, "r");
+//  if (fp == NULL) {
+//    printf("Failed to run command\n" );
+//    return 0;
+//  }
+//  
+//  char temp[10][500];
+//  /* Read the output a line at a time - output it. */
+//  while (fgets(path, sizeof(path)-1, fp) != NULL) {
+//    //printf("%s", path);
+// 
+//    istringstream iss(path);
+//    for(Int_t i=0; i<10; i++){iss >> temp[i];}
+//    
+//    // collecting information about the masses
+//    if(strcmp(temp[0],"recoil")==0 && strcmp(temp[1],"Z")==0 && strcmp(temp[3],"N")==0){
+//      lightMass = atof(temp[5]);
+//    }
+//    if(strcmp(temp[0],"ejectile")==0 && strcmp(temp[1],"Z")==0 && strcmp(temp[3],"N")==0){
+//      heavyMass = atof(temp[5]);
+//    }
+//    if(strcmp(temp[0],"Qvalue")==0){
+//      qValue = atof(temp[1]);
+//    }
+//    if(strcmp(temp[0],"proj")==0 && strcmp(temp[2],"targ")==0){
+//      projMass = atof(temp[1]);
+//      targetMass = atof(temp[3]);
+//    }
+//  }
+//
+//  /* close */
+//  pclose(fp); 
    
-  FILE *fp;
-  char path[1000];
- 
-  /* Open the command for reading. */
-  fp = popen(tempCommand, "r");
-  if (fp == NULL) {
-    printf("Failed to run command\n" );
-    return 0;
-  }
-  
-  char temp[10][500];
-  /* Read the output a line at a time - output it. */
-  while (fgets(path, sizeof(path)-1, fp) != NULL) {
-    //printf("%s", path);
- 
-    istringstream iss(path);
-    for(Int_t i=0; i<10; i++){iss >> temp[i];}
-    
-    // collecting information about the masses
-    if(strcmp(temp[0],"recoil")==0 && strcmp(temp[1],"Z")==0 && strcmp(temp[3],"N")==0){
-      lightMass = atof(temp[5]);
-    }
-    if(strcmp(temp[0],"ejectile")==0 && strcmp(temp[1],"Z")==0 && strcmp(temp[3],"N")==0){
-      heavyMass = atof(temp[5]);
-    }
-    if(strcmp(temp[0],"Qvalue")==0){
-      qValue = atof(temp[1]);
-    }
-    if(strcmp(temp[0],"proj")==0 && strcmp(temp[2],"targ")==0){
-      projMass = atof(temp[1]);
-      targetMass = atof(temp[3]);
-    }
-  }
-
- /* close */
- pclose(fp); 
-  
- printf("Obtained masses: projectile %f, target %f, light ejectile %f, heavy ejectile %f; Q-value %f\n", projMass, targetMass, lightMass, heavyMass, qValue); 
+  printf("Obtained masses: projectile %f, target %f, light ejectile %f, heavy ejectile %f; Q-value %f\n", projMass, targetMass, lightMass, heavyMass, qValue); 
   
   
   
@@ -162,51 +256,51 @@ Int_t main(Int_t argc, char **argv){
   treeHeader->Write("header");
 
   
-  TFile* infile = TFile::Open(info->fOutFileNameReaction,"read");
-  
-  if(!infile){
-   cout << "Rootfile from reactions not found!" << endl;
-   return 0;
-  }
-  
-  Bool_t foundGraph = true;
-  Int_t graphCounter=0;
-  const Int_t graphMax=100;
-
-  TGraph* graph[graphMax];
-  for(Int_t i=0; i<graphMax; i++){
-    graph[i] = new TGraph();
-  }
-  
-  
-  char tmp[20];
-
-  while(foundGraph){
-    
-    sprintf(tmp,"EvsTh_lab_%i",graphCounter);
-    graph[graphCounter] = (TGraph*)infile->Get(tmp);
-    
-    //cout << "Looking for TGraph " << tmp << endl;
-
-    if(!graph[graphCounter]){
-      foundGraph=false;
-    }
-    else{
-      //cout << "Found TGraph " << tmp << endl;
-    
-      graphCounter++;
-    }
-
-    
-    // stopper
-    if(graphCounter>graphMax){
-      cout << "Error while finding graphs in rootfile! Aborting..." << endl;
-      abort();
-    }
-
-  }
-
-  cout << "Found " << graphCounter << " TGraphs" << endl;
+//  TFile* infile = TFile::Open(info->fOutFileNameReaction,"read");
+//  
+//  if(!infile){
+//   cout << "Rootfile from reactions not found!" << endl;
+//   return 0;
+//  }
+//  
+//  Bool_t foundGraph = true;
+//  Int_t graphCounter=0;
+//  const Int_t graphMax=100;
+//
+//  TGraph* graph[graphMax];
+//  for(Int_t i=0; i<graphMax; i++){
+//    graph[i] = new TGraph();
+//  }
+//  
+//  
+//  char tmp[20];
+//
+//  while(foundGraph){
+//    
+//    sprintf(tmp,"EvsTh_lab_%i",graphCounter);
+//    graph[graphCounter] = (TGraph*)infile->Get(tmp);
+//    
+//    //cout << "Looking for TGraph " << tmp << endl;
+//
+//    if(!graph[graphCounter]){
+//      foundGraph=false;
+//    }
+//    else{
+//      //cout << "Found TGraph " << tmp << endl;
+//    
+//      graphCounter++;
+//    }
+//
+//    
+//    // stopper
+//    if(graphCounter>graphMax){
+//      cout << "Error while finding graphs in rootfile! Aborting..." << endl;
+//      abort();
+//    }
+//
+//  }
+//
+//  cout << "Found " << graphCounter << " TGraphs" << endl;
   
   
   // get the histograms with beam information 
@@ -214,15 +308,6 @@ Int_t main(Int_t argc, char **argv){
   TFile* fileBeamProfile;
   TTree* treeBeamProfile;
   
-  //Float_t fhxout[14]={0.0}; // full sim file
-  
-  //Int_t beamMass=0, beamCharge=0;
-  Float_t beamE=10.0;    // in MeV/u
-  Float_t beamX=0.0, beamY=0.0, beamZ=0.0; // position in mm
-  Float_t beamA=0.0, beamB=0.0; // angle in mrad
-  Float_t beamTheta=0.0, beamPhi=0.0; // in rad
-  Int_t beamNoEvents=0;
-
 
 
   if(!(info->HaveOedoSimFileName()) && 
@@ -389,6 +474,14 @@ Int_t main(Int_t argc, char **argv){
   events->Branch("beamPhi", &beamPhi, "beamPhi/F");
 
 
+  // determine PDG ID of light ejectile
+  // todo: if the light ejectile is not the same for each event,
+  //       than this part needs to be moved to the event loop
+  char lightPdgIdName[20];
+  sprintf(lightPdgIdName,"1000%02d%03d0",lightZ,lightA);
+  lightPdgId=atoi(lightPdgIdName);
+  //printf("Outgoing PDG ID: char %s, int %i\n", tmp, lightPdgId);
+  
   //printf("Got energy %f, theta %f\n", en, th);
   
   if(info->fNumberEvents<0){
@@ -399,74 +492,46 @@ Int_t main(Int_t argc, char **argv){
   }
   
 
+
+
+
+
+  // ****************************************************************************************
+  // ********************** start generating events *****************************************
+  // ****************************************************************************************
+
+
+
   TStopwatch* watch = new TStopwatch();
   watch->Start();
 
-  Int_t notProcessed=0; // aux for counting events with too low energy (todo)
+  Int_t ignoredState=0; // counter for events which have at least one excited state ignored
 
   for(Int_t i=0; i<info->fNumberEvents; i++){
 
     eventNumber=i; // for the tree
     
-    if(info->ProfileBeamE()){
-     if(i%1000==0){
-       printf("%i events generated (%i requested)\n", i, info->fNumberEvents); 
-     }
-    }else{
+//    if(info->ProfileBeamE()){
+//     if(i%100==0){
+//       printf("%i events generated (%i requested)\n", i, info->fNumberEvents); 
+//     }
+//    }else{
      if(i%10000==0){
        printf("%i events generated (%i requested)\n", i, info->fNumberEvents);
      }
-    }
+//    }
 
 
     // get beam information
     if(info->HaveOedoSimFileName()){ // todo: check if any information is needed from tree before reading it
 
-      // the following lines are only needed if the full oedo sim file is taken
-      // some selections are needed
-
-
-      // fhxout[0]=0.0;
-
-      // while((((Int_t)fhxout[0]) != 132) || (((Int_t)fhxout[1]) != 50)  ){
-
-      //   Int_t rndmEvnt = (Int_t)randomizer->Uniform(beamNoEvents);
-
-      //   treeBeamProfile->GetEvent(rndmEvnt);
-      // }
-      // 
-      // beamMass=(Int_t)fhxout[0];
-      // beamCharge=(Int_t)fhxout[1];
-
-      // if(info->ProfileBeamE()){
-      //   beamE=fhxout[4];
-      // }
-
-      // if(info->ProfileBeamX()){
-      //   beamX=fhxout[10];
-      // }
-
-      // if(info->ProfileBeamY()){
-      //   beamY=fhxout[11];
-      // }
-
-      // if(info->ProfileBeamA()){
-      //   beamA=fhxout[12];
-      // }
-
-      // if(info->ProfileBeamB()){
-      //   beamB=fhxout[13];
-      // }
-
-
-
       // shortened oedo sim file contains only good events
       Int_t rndmEvnt = (Int_t)randomizer->Uniform(beamNoEvents);
       treeBeamProfile->GetEvent(rndmEvnt);
 
-
-
     }else{ // no beam profile
+
+      // these lines are somehow redundant
       beamA=0.0;
       beamB=0.0;
       beamX=0.0;
@@ -502,89 +567,109 @@ Int_t main(Int_t argc, char **argv){
     }
 
 
-    TFile* tempFile;
-    TGraph* tempGraph[numberOfStates];
+    // get the light ejectile energy for a certain theta
+    // this energy depends on the beam energy
 
-    if(info->ProfileBeamE()){
-
-      if(beamE<maxExEnergy){
-        cout << "Beam energy = " << beamE << " is too low! Will be set to " << info->fBeamEnergy << " MeV/u! (todo: fix this!!!!!!!!!!)" << endl;
-        notProcessed++;
-        beamE=info->fBeamEnergy;
-        //continue; // bad hack! todo!
-      }
-
-      // run shell command / execute 'reaction'
-      sprintf(tempFileName, "/home/philipp/programme/makeEvents/132Sndp_deleteme.root");
-
-      //sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p 82 50 -t 1 1 -tr 1 %f %d -e %f -o %s",maxExEnergy, numberOfStates, beamE*(Float_t)beamMass, tempFileName);
-      //sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p 82 50 -t 1 1 -tr 1 %f %d -e %f -o %s > /dev/null",maxExEnergy, numberOfStates, beamE*(Float_t)beamMass, tempFileName);
-      //sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p %d %d -t %d %d -tr %d %f %d -e %f -o %s ", projA-projZ, projZ, targetA-targetZ, targetZ, targetA-lightA,  maxExEnergy, numberOfStates, beamE*(Float_t)projA, tempFileName);
-      sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p %d %d -t %d %d -tr %d %f %d -e %f -o %s > /dev/null ", projA-projZ, projZ, targetA-targetZ, targetZ, targetA-lightA,  maxExEnergy, numberOfStates, beamE*(Float_t)projA, tempFileName);
-      
-      //cout << "Executing command: " << tempCommand << endl;
-      
-      system(tempCommand);
-      
-      tempFile = TFile::Open(tempFileName,"read");
-      if(!tempFile){
-        cout << "Temporary file is not existing: " << tempFileName << endl;
-        return 0;
-      }
-      //TGraph* tempGraph[numberOfStates];
-      for(Int_t j=0; j<numberOfStates; j++){
-        tempGraph[j]=new TGraph();
-        //char tmp[20];
-        sprintf(tmp,"EvsTh_lab_%i",j);
-        tempGraph[j] = (TGraph*)tempFile->Get(tmp);
-        
-        if(!tempGraph[j]){
-          cout << "Graph not found: " << tmp << endl;
-          return 0;
-
-        }
-      }
-
-
-
-    }else{
-      beamE=info->fBeamEnergy;
-    }
-
-
-    // determine PDG ID of light ejectile
-    sprintf(tmp,"1000%02d%03d0",lightZ,lightA);
-    lightPdgId=atoi(tmp);
-    //printf("Outgoing PDG ID: char %s, int %i\n", tmp, lightPdgId);
-
-
-
-
-
-//    t=181.0;
-//    while(t>180.0){
-//      histAll->GetRandom2(t,e);
-//    }
-
-    
-    
+    // first: get the theta
     // at the moment: only uniform theta distribution
     // todo: add physics here!!!!!
     lightTheta=randomizer->Uniform(180.0);
 
+//    TFile* tempFile;
+//    TGraph* tempGraph[numberOfStates];
+
     if(info->ProfileBeamE()){
-      Int_t g=(Int_t)randomizer->Uniform(numberOfStates);
-      lightEnergy=tempGraph[g]->Eval(lightTheta);
-    }else{
-      // sample energy from graph
-      // choose a random graph
-      Int_t g=(Int_t)randomizer->Uniform(graphCounter);  
-      //if(g<0 || g>=graphCounter){
-      //  cout << "Invalid graph number " << g << endl;
-      //  return 0;
+
+      //if(beamE<maxExEnergy){
+      //  cout << "Beam energy = " << beamE << " is too low! Will be set to " << info->fBeamEnergy << " MeV/u! (todo: fix this!!!!!!!!!!)" << endl;
+      //  notProcessed++;
+      //  beamE=info->fBeamEnergy;
+      //  // bad hack! todo!
       //}
-      lightEnergy=graph[g]->Eval(lightTheta);
+
+      // run shell command / execute 'reaction'
+//      sprintf(tempFileName, "/home/philipp/programme/makeEvents/132Sndp_deleteme.root");
+//
+//      //sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p 82 50 -t 1 1 -tr 1 %f %d -e %f -o %s",maxExEnergy, numberOfStates, beamE*(Float_t)beamMass, tempFileName);
+//      //sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p 82 50 -t 1 1 -tr 1 %f %d -e %f -o %s > /dev/null",maxExEnergy, numberOfStates, beamE*(Float_t)beamMass, tempFileName);
+//      //sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p %d %d -t %d %d -tr %d %f %d -e %f -o %s ", projA-projZ, projZ, targetA-targetZ, targetZ, targetA-lightA,  maxExEnergy, numberOfStates, beamE*(Float_t)projA, tempFileName);
+//      sprintf(tempCommand,"/home/philipp/programme/reaction/Reaction -p %d %d -t %d %d -tr %d %f %d -e %f -o %s > /dev/null ", projA-projZ, projZ, targetA-targetZ, targetZ, targetA-lightA,  maxExEnergy, numberOfStates, beamE*(Float_t)projA, tempFileName);
+//      
+//      //cout << "Executing command: " << tempCommand << endl;
+//      
+//      system(tempCommand);
+//      
+//      tempFile = TFile::Open(tempFileName,"read");
+//      if(!tempFile){
+//        cout << "Temporary file is not existing: " << tempFileName << endl;
+//        return 0;
+//      }
+//      //TGraph* tempGraph[numberOfStates];
+//      for(Int_t j=0; j<numberOfStates; j++){
+//        tempGraph[j]=new TGraph();
+//        //char tmp[20];
+//        sprintf(tmp,"EvsTh_lab_%i",j);
+//        tempGraph[j] = (TGraph*)tempFile->Get(tmp);
+//        
+//        if(!tempGraph[j]){
+//          cout << "Graph not found: " << tmp << endl;
+//          return 0;
+//
+//        }
+//      }
+
+      Int_t maxState=numberOfStates;
+      Kinematics* reactionTemp[maxNumberOfStates];
+      for(Int_t s=0; s<numberOfStates; s++){
+        if(beamE>stateEnergy[s]){
+          reactionTemp[s] = new Kinematics(proj, targ, reco, ejec, beamE*projA, stateEnergy[s]);
+        }else{
+          maxState=s;
+          ignoredState++;
+          cout << "Warning: state at " << stateEnergy[s] << " MeV is larger than beam energy (" << beamE << " MeV)! This state will be ignored! Using only " << maxState << " states!" << endl;
+          break;
+        }
+      }
+      
+      Int_t st=(Int_t)randomizer->Uniform(maxState);
+      lightEnergy=reactionTemp[st]->ELab(lightTheta/180.0*TMath::Pi(),2);
+
+      for(Int_t s=0; s<maxState; s++){
+        delete reactionTemp[s];
+      }
+
+
+    }else{
+      beamE=info->fBeamEnergy;
+      Int_t s=(Int_t)randomizer->Uniform(numberOfStates);
+      lightEnergy=reaction[s]->ELab(lightTheta/180.0*TMath::Pi(),2);
     }
+
+
+    
+//    // at the moment: only uniform theta distribution
+//    // todo: add physics here!!!!!
+//    lightTheta=randomizer->Uniform(180.0);
+//
+//    if(info->ProfileBeamE()){
+//      Int_t g=(Int_t)randomizer->Uniform(numberOfStates);
+//      lightEnergy=tempGraph[g]->Eval(lightTheta);
+//    }else{
+//      // sample energy from graph
+//      // choose a random graph
+//      //Int_t g=(Int_t)randomizer->Uniform(graphCounter);  
+//      ////if(g<0 || g>=graphCounter){
+//      ////  cout << "Invalid graph number " << g << endl;
+//      ////  return 0;
+//      ////}
+//      //lightEnergy=graph[g]->Eval(lightTheta);
+//
+//
+//      Int_t s=(Int_t)randomizer->Uniform(numberOfStates);  
+//      lightEnergy=reaction[s]->ELab(lightTheta/180.0*TMath::Pi(),2);
+//
+//
+//    }
 
     
     //lightEnergy=graph[g]->Eval(lightTheta);             
@@ -615,24 +700,24 @@ Int_t main(Int_t argc, char **argv){
 //    for(Int_t j=0; j<numberOfStates; j++){
 //      delete tempGraph[j];
 //    }
-    if(info->ProfileBeamE()){
-      tempFile->Close();
-//      delete tempFile;
-      system(Form("rm -f %s", tempFileName));
-      
-      // profiling is very time consuming a.t.m.
-      // save events for the case of any crash
-      //if(i%1000==0){
-      //  cout << "Info: Writing events to file ..." << endl;
-      //  outfile->cd();
-      //  events->Write("events");
-      //}
-    }
+//    if(info->ProfileBeamE()){
+//      tempFile->Close();
+//      system(Form("rm -f %s", tempFileName));
+//      
+//      // profiling is very time consuming a.t.m.
+//      // save events for the case of any crash
+//      //if(i%1000==0){
+//      //  cout << "Info: Writing events to file ..." << endl;
+//      //  outfile->cd();
+//      //  events->Write("events");
+//      //}
+//    }
 
   } // end of loop
  
   cout << endl; 
-  cout << "Event generation done!" << endl;
+  cout << "Event generation done! " << eventNumber+1 << " events generated. " << ignoredState << " events with reduced number of excited states." << endl;
+
   watch->Stop();
   cout << "Took: real time " << watch->RealTime() << "sec., CPU time " << watch->CpuTime() << " sec." << endl;
   cout << endl; 

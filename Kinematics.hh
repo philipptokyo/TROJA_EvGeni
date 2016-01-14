@@ -153,6 +153,6 @@ private:
   double V_pe(double, double);
   double E_final(int);
   double T_final(int);
-  ClassDef(Kinematics,1);
+  //ClassDef(Kinematics,1);
 };
 #endif
