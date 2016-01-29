@@ -76,13 +76,17 @@ Int_t main(Int_t argc, char **argv){
   Float_t maxExEnergy=info->fMaxExEnergy;
 
   Float_t stateEnergy[maxNumberOfStates]={0.0};
-  for(Int_t s=0; s<numberOfStates; s++){
-    stateEnergy[s]=(Float_t)s * maxExEnergy / (Float_t)(numberOfStates-1);
-    printf("  state %d, energy %f\n", s, stateEnergy[s]);
-    if(!(info->ProfileBeamE()) && stateEnergy[s]>beamE){
-      cout << "Error: state energy is larger than beam energy!" << endl;
-      return 0;
+  if(numberOfStates>1){
+    for(Int_t s=0; s<numberOfStates; s++){
+      stateEnergy[s]=(Float_t)s * maxExEnergy / (Float_t)(numberOfStates-1);
+      printf("  state %d, energy %f\n", s, stateEnergy[s]);
+      if(!(info->ProfileBeamE()) && stateEnergy[s]>beamE){
+        cout << "Error: state energy is larger than beam energy!" << endl;
+        return 0;
+      }
     }
+  }else{
+    // stateEnergy[0] is already 0
   }
   
   Float_t projMass=0.0, targetMass=0.0, lightMass=0.0, heavyMass=0.0, qValue=0.0; 
@@ -215,6 +219,9 @@ Int_t main(Int_t argc, char **argv){
   //Int_t heavyPdgId=1000501330; // 133Sn
   Int_t eventNumber=0;
 
+  Float_t excEn=0.0, missMass=0.0;
+  //Float_t heavyMass2=0.0;
+
   TTree *events = new TTree();
   events->Branch("eventNumber", &eventNumber, "eventNumber/I");
   
@@ -233,6 +240,9 @@ Int_t main(Int_t argc, char **argv){
   events->Branch("beamB", &beamB, "beamB/F");
   events->Branch("beamTheta", &beamTheta, "beamTheta/F");
   events->Branch("beamPhi", &beamPhi, "beamPhi/F");
+  events->Branch("excitationEnergy", &excEn, "excitationEnergy/F");
+  //events->Branch("heavyMass2", &heavyMass2, "heavyMass2/F");
+  events->Branch("missingMass", &missMass, "missingMass/F");
 
 
   // determine PDG ID of light ejectile
@@ -328,6 +338,17 @@ Int_t main(Int_t argc, char **argv){
     // at the moment: only uniform theta distribution
     // todo: add physics here!!!!!
     lightTheta=randomizer->Uniform(180.0);
+    
+    // phi uniform
+    lightPhi=randomizer->Uniform(2.0*TMath::Pi());
+
+
+//// for testing    
+//    lightTheta=90.0;
+//    lightPhi=0.0;
+
+
+
 
     if(info->ProfileBeamE()){
 
@@ -355,7 +376,18 @@ Int_t main(Int_t argc, char **argv){
     }else{
       beamE=info->fBeamEnergy;
       Int_t s=(Int_t)randomizer->Uniform(numberOfStates);
+      //printf("  taking index %d",s);
       lightEnergy=reaction[s]->ELab(lightTheta/180.0*TMath::Pi(),2);
+      //printf("  ELab is %f\n", lightEnergy);
+
+      TVector3 dir(0,0,1);
+      dir.SetTheta(lightTheta/180.0*TMath::Pi());
+      TLorentzVector rec(dir,lightEnergy*1000+lightMass*1000);
+      if(rec.Mag()>0)
+        rec.SetRho( sqrt( (lightEnergy+lightMass)*(lightEnergy+lightMass) - lightMass*lightMass )*1000 );
+      excEn = reaction[s]->GetExcEnergy(rec)/1000.0; // MeV
+      // printf("excitation energy %f\n", excEn);
+
     }
 
 
@@ -365,7 +397,7 @@ Int_t main(Int_t argc, char **argv){
     
     // phi uniform
     lightPhi=randomizer->Uniform(2.0*TMath::Pi());
-    
+
     TVector3 direction(0.0, 0.0, -1.0);
 
     direction.SetMagThetaPhi(1.0, lightTheta, lightPhi);
@@ -378,6 +410,70 @@ Int_t main(Int_t argc, char **argv){
     lightPhi=direction.Phi();
 
     //lightPdgId=2212; //proton
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // reconstruct missing mass
+
+    //projMass=122855.922;
+    //lightMass=938.279;
+    //heavyMass=123793.125;
+    // conclusion: shift in missing mass comes from nuclear masses
+    // but not the spread
+
+
+    Float_t projGamma = (beamE * (Float_t)projA) / projMass + 1.0;
+    //Float_t projBeta = TMath::Sqrt(1.0 - 1.0/(projGamma*projGamma));
+    Float_t projMomentum = projMass * TMath::Sqrt(projGamma*projGamma - 1.0);
+
+    Float_t lightGamma = lightEnergy/lightMass + 1.0;
+    //Float_t lightBeta = TMath::Sqrt(1.0 - 1.0/(lightGamma*lightGamma));
+    Float_t lightMomentum = lightMass * TMath::Sqrt(lightGamma*lightGamma - 1.0);
+
+    Float_t cmBeta = projMomentum / (beamE*(Float_t)projA + projMass + targetMass );
+    Float_t cmEnergy = TMath::Sqrt(projMass*projMass + targetMass*targetMass + 2.0*targetMass*(projMass*projGamma));
+    
+    TVector3 cmV(0.0, 0.0, cmBeta);
+    TVector3 lightV(0.0, 0.0, 1.0);
+    lightV.SetMagThetaPhi(lightMomentum, lightTheta, lightPhi);
+    TLorentzVector lightL(0.0, 0.0, 0.0, 1.0);
+    lightL.SetVect(lightV);
+    lightL.SetE(lightEnergy+lightMass);
+
+    //printf("light px %f, py %f, pz %f, e %f (lab)\n", lightL.Px(), lightL.Py(), lightL.Pz(), lightL.E());
+    
+    lightL.Boost(-cmV);
+
+    //printf("light px %f, py %f, pz %f, e %f (cm)\n", lightL.Px(), lightL.Py(), lightL.Pz(), lightL.E());
+
+
+    TLorentzVector heavyL;
+    heavyL.SetVect(-lightL.Vect());
+    heavyL.SetE(cmEnergy - lightL.E());
+
+    //printf("heavy px %f, py %f, pz %f, e %f (cm), mag %f, mass %f, exc en %f\n", heavyL.Px(), heavyL.Py(), heavyL.Pz(), heavyL.E(), heavyL.M(), heavyMass, heavyL.M()-heavyMass);
+
+    //heavyL.Boost(cmV);
+
+    missMass = heavyL.M()-heavyMass;
+
+    //printf("heavy px %f, py %f, pz %f, e %f (lab), mag %f, mass %f, exc en %f\n", heavyL.Px(), heavyL.Py(), heavyL.Pz(), heavyL.E(), heavyL.M(), heavyMass, heavyL.M()-heavyMass);
+
+
+    //printf("\n");
+
+
 
     events->Fill();
 
