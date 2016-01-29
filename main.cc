@@ -343,12 +343,6 @@ Int_t main(Int_t argc, char **argv){
     lightPhi=randomizer->Uniform(2.0*TMath::Pi());
 
 
-//// for testing    
-//    lightTheta=90.0;
-//    lightPhi=0.0;
-
-
-
 
     if(info->ProfileBeamE()){
 
@@ -409,69 +403,57 @@ Int_t main(Int_t argc, char **argv){
     lightTheta=direction.Theta();
     lightPhi=direction.Phi();
 
-    //lightPdgId=2212; //proton
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-    // reconstruct missing mass
-
-    //projMass=122855.922;
-    //lightMass=938.279;
-    //heavyMass=123793.125;
-    // conclusion: shift in missing mass comes from nuclear masses
-    // but not the spread
-
-
-    Float_t projGamma = (beamE * (Float_t)projA) / projMass + 1.0;
-    //Float_t projBeta = TMath::Sqrt(1.0 - 1.0/(projGamma*projGamma));
-    Float_t projMomentum = projMass * TMath::Sqrt(projGamma*projGamma - 1.0);
-
-    Float_t lightGamma = lightEnergy/lightMass + 1.0;
-    //Float_t lightBeta = TMath::Sqrt(1.0 - 1.0/(lightGamma*lightGamma));
-    Float_t lightMomentum = lightMass * TMath::Sqrt(lightGamma*lightGamma - 1.0);
-
-    Float_t cmBeta = projMomentum / (beamE*(Float_t)projA + projMass + targetMass );
-    Float_t cmEnergy = TMath::Sqrt(projMass*projMass + targetMass*targetMass + 2.0*targetMass*(projMass*projGamma));
-    
-    TVector3 cmV(0.0, 0.0, cmBeta);
-    TVector3 lightV(0.0, 0.0, 1.0);
-    lightV.SetMagThetaPhi(lightMomentum, lightTheta, lightPhi);
-    TLorentzVector lightL(0.0, 0.0, 0.0, 1.0);
-    lightL.SetVect(lightV);
-    lightL.SetE(lightEnergy+lightMass);
-
-    //printf("light px %f, py %f, pz %f, e %f (lab)\n", lightL.Px(), lightL.Py(), lightL.Pz(), lightL.E());
-    
-    lightL.Boost(-cmV);
-
-    //printf("light px %f, py %f, pz %f, e %f (cm)\n", lightL.Px(), lightL.Py(), lightL.Pz(), lightL.E());
-
-
-    TLorentzVector heavyL;
-    heavyL.SetVect(-lightL.Vect());
-    heavyL.SetE(cmEnergy - lightL.E());
-
-    //printf("heavy px %f, py %f, pz %f, e %f (cm), mag %f, mass %f, exc en %f\n", heavyL.Px(), heavyL.Py(), heavyL.Pz(), heavyL.E(), heavyL.M(), heavyMass, heavyL.M()-heavyMass);
-
-    //heavyL.Boost(cmV);
-
-    missMass = heavyL.M()-heavyMass;
-
-    //printf("heavy px %f, py %f, pz %f, e %f (lab), mag %f, mass %f, exc en %f\n", heavyL.Px(), heavyL.Py(), heavyL.Pz(), heavyL.E(), heavyL.M(), heavyMass, heavyL.M()-heavyMass);
-
-
-    //printf("\n");
+//    // reconstruct missing mass
+//
+//    //projMass=122855.922;
+//    //lightMass=938.279;
+//    //heavyMass=123793.125;
+//    // conclusion: shift in missing mass comes from nuclear masses
+//    // but not the spread
+//
+//
+//    Float_t projGamma = (beamE * (Float_t)projA) / projMass + 1.0;
+//    //Float_t projBeta = TMath::Sqrt(1.0 - 1.0/(projGamma*projGamma));
+//    Float_t projMomentum = projMass * TMath::Sqrt(projGamma*projGamma - 1.0);
+//
+//    Float_t lightGamma = lightEnergy/lightMass + 1.0;
+//    //Float_t lightBeta = TMath::Sqrt(1.0 - 1.0/(lightGamma*lightGamma));
+//    Float_t lightMomentum = lightMass * TMath::Sqrt(lightGamma*lightGamma - 1.0);
+//
+//    Float_t cmBeta = projMomentum / (beamE*(Float_t)projA + projMass + targetMass );
+//    Float_t cmEnergy = TMath::Sqrt(projMass*projMass + targetMass*targetMass + 2.0*targetMass*(projMass*projGamma));
+//    
+//    TVector3 cmV(0.0, 0.0, cmBeta);
+//    TVector3 lightV(0.0, 0.0, 1.0);
+//    lightV.SetMagThetaPhi(lightMomentum, lightTheta, lightPhi);
+//    TLorentzVector lightL(0.0, 0.0, 0.0, 1.0);
+//    lightL.SetVect(lightV);
+//    lightL.SetE(lightEnergy+lightMass);
+//
+//    //printf("light px %f, py %f, pz %f, e %f (lab)\n", lightL.Px(), lightL.Py(), lightL.Pz(), lightL.E());
+//    
+//    lightL.Boost(-cmV);
+//
+//    //printf("light px %f, py %f, pz %f, e %f (cm)\n", lightL.Px(), lightL.Py(), lightL.Pz(), lightL.E());
+//
+//
+//    TLorentzVector heavyL;
+//    heavyL.SetVect(-lightL.Vect());
+//    heavyL.SetE(cmEnergy - lightL.E());
+//
+//    //printf("heavy px %f, py %f, pz %f, e %f (cm), mag %f, mass %f, exc en %f\n", heavyL.Px(), heavyL.Py(), heavyL.Pz(), heavyL.E(), heavyL.M(), heavyMass, heavyL.M()-heavyMass);
+//
+//    //heavyL.Boost(cmV);
+//
+//    missMass = heavyL.M()-heavyMass;
+//
+//    //printf("heavy px %f, py %f, pz %f, e %f (lab), mag %f, mass %f, exc en %f\n", heavyL.Px(), heavyL.Py(), heavyL.Pz(), heavyL.E(), heavyL.M(), heavyMass, heavyL.M()-heavyMass);
+//
+//    //printf("\n");
 
 
 
