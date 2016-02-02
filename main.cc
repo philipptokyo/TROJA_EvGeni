@@ -106,11 +106,13 @@ Int_t main(Int_t argc, char **argv){
   Nucleus* reco = new Nucleus(lightZ, lightA-lightZ, massFile);
   Nucleus* ejec = new Nucleus(projZ, projA-projZ+(targetA-lightA), massFile);
 
-  printf("Info: overwriting masses of particles!\n"); 
-  proj->SetMass(122855.27546709757); // from geant4
-  reco->SetMass(938.272013);  // from geant4
-  targ->SetMass(1875.613); // from geant4
-  ejec->SetMass(123792.371068097563); // from geant4
+
+
+//  printf("Info: overwriting masses of particles!\n"); 
+//  proj->SetMass(122855.27546709757); // from geant4
+//  reco->SetMass(938.272013);  // from geant4
+//  targ->SetMass(1875.613); // from geant4
+//  ejec->SetMass(123792.371068097563); // from geant4
 
   
   projMass=proj->GetMass();
