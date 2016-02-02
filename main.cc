@@ -76,6 +76,7 @@ Int_t main(Int_t argc, char **argv){
   Float_t maxExEnergy=info->fMaxExEnergy;
 
   Float_t stateEnergy[maxNumberOfStates]={0.0};
+  printf("Set:\n");
   if(numberOfStates>1){
     for(Int_t s=0; s<numberOfStates; s++){
       stateEnergy[s]=(Float_t)s * maxExEnergy / (Float_t)(numberOfStates-1);
@@ -98,19 +99,25 @@ Int_t main(Int_t argc, char **argv){
     return 0;
   }
   
-  char* massFile = (char*)"/home/philipp/programme/reaction/mass.dat";
+  char* massFile = (char*)"/home/philipp/programme/makeEvents/mass.dat";
 
   Nucleus* proj = new Nucleus(projZ, projA-projZ, massFile);
   Nucleus* targ = new Nucleus(targetZ, targetA-targetZ, massFile);
   Nucleus* reco = new Nucleus(lightZ, lightA-lightZ, massFile);
   Nucleus* ejec = new Nucleus(projZ, projA-projZ+(targetA-lightA), massFile);
 
+  printf("Info: overwriting masses of particles!\n"); 
+  proj->SetMass(122855.27546709757); // from geant4
+  reco->SetMass(938.272013);  // from geant4
+  targ->SetMass(1875.613); // from geant4
+  ejec->SetMass(123792.371068097563); // from geant4
+
+  
   projMass=proj->GetMass();
   targetMass=targ->GetMass();
   lightMass=reco->GetMass();
   heavyMass=ejec->GetMass();
-
-
+  
   Kinematics* reaction[maxNumberOfStates];
   for(Int_t s=0; s<numberOfStates; s++){
      reaction[s] = new Kinematics(proj, targ, reco, ejec, beamE*projA, stateEnergy[s]);
@@ -119,7 +126,7 @@ Int_t main(Int_t argc, char **argv){
   qValue=reaction[0]->GetQValue();
   
    
-  printf("Obtained masses: projectile %f, target %f, light ejectile %f, heavy ejectile %f; Q-value %f\n", projMass, targetMass, lightMass, heavyMass, qValue); 
+  printf("Nuclear masses: projectile %f, target %f, light ejectile %f, heavy ejectile %f; Q-value %f\n", projMass, targetMass, lightMass, heavyMass, qValue); 
   
    
 
