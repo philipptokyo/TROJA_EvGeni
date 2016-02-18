@@ -347,7 +347,8 @@ Int_t main(Int_t argc, char **argv){
     // first: get the theta
     // at the moment: only uniform theta distribution
     // todo: add physics here!!!!!
-    lightTheta=randomizer->Uniform(180.0);
+//    lightTheta=randomizer->Uniform(180.0);
+lightTheta=randomizer->Uniform(90.0, 180.0);
     
     // phi uniform
     lightPhi=randomizer->Uniform(2.0*TMath::Pi());
@@ -386,7 +387,7 @@ Int_t main(Int_t argc, char **argv){
 
 // changed for testing reasons
 // todo: keep this in mind !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-lightEnergy=beamE;
+//lightEnergy=beamE;
 
       //printf("  ELab is %f\n", lightEnergy);
 
