@@ -14,6 +14,7 @@
 #include "Nucleus.hh"
 #include "Kinematics.hh"
 #include "LibPerso.h"
+#include "FrescoPlotter.hh"
 
 using namespace std;
 
@@ -50,6 +51,21 @@ Int_t main(Int_t argc, char **argv){
   
   //get information from textfile
   info->parse(argv[1]);
+
+  FrescoPlotter* frescoPlotter = new FrescoPlotter(info);
+  TH1F* histCScmFresco = frescoPlotter->CreateHistogram();
+
+  // determine binning
+  Int_t binN;
+  Double_t binL, binU;
+  binN = histCScmFresco->GetXaxis()->GetNbins();
+  binL = histCScmFresco->GetXaxis()->GetBinLowEdge(0);
+  binU = histCScmFresco->GetXaxis()->GetBinUpEdge(binN);
+
+
+  TH1F* histCScm = new TH1F("histCScm","", binN, binL, binU);
+  TH1F* histCSlab = new TH1F("histCSlab","", binN, binL, binU);
+  TH2F* histCSlabVScm = new TH2F("histCSlabVScm", "", binN, binL, binU, binN, binL, binU);
 
   
   Float_t beamE=info->fBeamEnergy;    // in MeV/u
@@ -347,8 +363,13 @@ Int_t main(Int_t argc, char **argv){
     // first: get the theta
     // at the moment: only uniform theta distribution
     // todo: add physics here!!!!!
-    lightTheta=randomizer->Uniform(180.0);
+    //lightTheta=randomizer->Uniform(180.0);
     //lightTheta=randomizer->Uniform(90.0, 180.0);
+    
+    // take theta distribution from fresco output
+    // todo: the correct distribution for the corresponding beam energy and excitation energy has to be chosen
+    lightTheta=histCScmFresco->GetRandom();
+
     
     // phi uniform
     lightPhi=randomizer->Uniform(2.0*TMath::Pi());
@@ -383,7 +404,18 @@ Int_t main(Int_t argc, char **argv){
       Int_t s=(Int_t)randomizer->Uniform(numberOfStates);
       //printf("  taking index %d",s);
 
-      lightEnergy=reaction[s]->ELab(lightTheta/180.0*TMath::Pi(),2);
+      //convert theta cm to theta lab
+      Float_t lightThetaCM = lightTheta;
+      lightTheta = reaction[s]->Angle_cm2lab(reaction[s]->GetVcm(2), lightTheta);
+
+
+
+      histCScm->Fill(lightThetaCM);
+      histCSlab->Fill(lightTheta);
+      histCSlabVScm->Fill(lightThetaCM, lightTheta);
+
+      //lightEnergy=reaction[s]->ELab(lightTheta/180.0*TMath::Pi(),2);
+      lightEnergy=reaction[s]->ELab(lightTheta,2);
 
 // changed for testing reasons
 // todo: keep this in mind !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -392,19 +424,22 @@ Int_t main(Int_t argc, char **argv){
       //printf("  ELab is %f\n", lightEnergy);
 
       TVector3 dir(0,0,1);
-      dir.SetTheta(lightTheta/180.0*TMath::Pi());
+      //dir.SetTheta(lightTheta/180.0*TMath::Pi());
+      dir.SetTheta(lightTheta);
       TLorentzVector rec(dir,lightEnergy*1000+lightMass*1000);
       if(rec.Mag()>0)
         rec.SetRho( sqrt( (lightEnergy+lightMass)*(lightEnergy+lightMass) - lightMass*lightMass )*1000 );
       excEn = reaction[s]->GetExcEnergy(rec)/1000.0; // MeV
       // printf("excitation energy %f\n", excEn);
 
+//      printf("Light theta cm %f,  lab %f, Vcm %f, energy %f\n", lightThetaCM, lightTheta, reaction[s]->GetVcm(2), lightEnergy);
+
     }
 
 
     // continue in rad
     // as required for geant4
-    lightTheta*=TMath::Pi()/180.0;
+    //lightTheta*=TMath::Pi()/180.0;
     
     // phi uniform
     lightPhi=randomizer->Uniform(2.0*TMath::Pi());
@@ -488,6 +523,10 @@ Int_t main(Int_t argc, char **argv){
   outfile->cd();
 
   events->Write("events");
+  histCScmFresco->Write("histCScmFresco");
+  histCScm->Write("histCScm");
+  histCSlab->Write("histCSlab");
+  histCSlabVScm->Write("histCSlabVScm");
 
   outfile->Close();
   
