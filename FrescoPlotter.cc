@@ -104,9 +104,9 @@ TH1F* FrescoPlotter::CreateHistogram(){
 		}
 		
 		
-		if((strcmp(cTemp[0],"CROSS")==0) && (strcmp(cTemp[1],"SECTIONS")==0) && (strcmp(cTemp[2],"FOR")==0) && (strcmp(cTemp[3],"OUTGOING")==0) && (strcmp(cTemp[4],"96Sr")==0) && (strcmp(cTemp[6],"p")==0) && (strcmp(cTemp[8],"state")==0) && (strcmp(cTemp[10],"1")==0)){
+		//if((strcmp(cTemp[0],"CROSS")==0) && (strcmp(cTemp[1],"SECTIONS")==0) && (strcmp(cTemp[2],"FOR")==0) && (strcmp(cTemp[3],"OUTGOING")==0) && (strcmp(cTemp[4],"96Sr")==0) && (strcmp(cTemp[6],"p")==0) && (strcmp(cTemp[8],"state")==0) && (strcmp(cTemp[10],"1")==0)){
 		//if((strcmp(cTemp[0],"CROSS")==0) && (strcmp(cTemp[1],"SECTIONS")==0) && (strcmp(cTemp[2],"FOR")==0) && (strcmp(cTemp[3],"OUTGOING")==0) && (strcmp(cTemp[4],"96Sr")==0) && (strcmp(cTemp[6],"p")==0) && (strcmp(cTemp[8],"state")==0) && (strcmp(cTemp[10],"2")==0)){
-		//if((strcmp(cTemp[0],"CROSS")==0) && (strcmp(cTemp[1],"SECTIONS")==0) && (strcmp(cTemp[2],"FOR")==0) && (strcmp(cTemp[3],"OUTGOING")==0) && (strcmp(cTemp[4],"13C")==0) && (strcmp(cTemp[6],"207Pb")==0) && (strcmp(cTemp[8],"state")==0) && (strcmp(cTemp[10],"1")==0)){
+		if((strcmp(cTemp[0],"CROSS")==0) && (strcmp(cTemp[1],"SECTIONS")==0) && (strcmp(cTemp[2],"FOR")==0) && (strcmp(cTemp[3],"OUTGOING")==0) && (strcmp(cTemp[4],"13C")==0) && (strcmp(cTemp[6],"207Pb")==0) && (strcmp(cTemp[8],"state")==0) && (strcmp(cTemp[10],"1")==0)){
 			
                         if(verbose){
                           cout << "Found 96Sr (d,p)" << endl;

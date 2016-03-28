@@ -123,14 +123,15 @@ Int_t main(Int_t argc, char **argv){
   Nucleus* ejec = new Nucleus(projZ, projA-projZ+(targetA-lightA), massFile);
 
 
-  printf("Nuclear masses: projectile %6.10f, target %6.10f, light ejectile %6.10f, heavy ejectile %6.10f; Q-value %f\n", projMass, targetMass, lightMass, heavyMass, qValue); 
+  //printf("Nuclear masses: projectile %6.10f, target %6.10f, light ejectile %6.10f, heavy ejectile %6.10f; Q-value %f\n", projMass, targetMass, lightMass, heavyMass, qValue); 
 
-  printf("Info: overwriting masses of particles!\n"); 
-  proj->SetMass((double)122855.275467); // from geant4
-  reco->SetMass((double)938.272013);  // from geant4
-  targ->SetMass((double)1875.613); // from geant4
-  ejec->SetMass((double)123792.371068); // from geant4
+  //printf("Info: overwriting masses of particles!\n"); 
+  //proj->SetMass((double)122855.275467); // from geant4
+  //reco->SetMass((double)938.272013);  // from geant4
+  //targ->SetMass((double)1875.613); // from geant4
+  //ejec->SetMass((double)123792.371068); // from geant4
 
+  //printf("Nuclear masses: projectile %6.10f, target %6.10f, light ejectile %6.10f, heavy ejectile %6.10f; Q-value %f\n", projMass, targetMass, lightMass, heavyMass, qValue); 
   
   projMass=proj->GetMass();
   targetMass=targ->GetMass();
@@ -363,8 +364,7 @@ Int_t main(Int_t argc, char **argv){
     // first: get the theta
     // at the moment: only uniform theta distribution
     // todo: add physics here!!!!!
-    //lightTheta=randomizer->Uniform(180.0);
-    //lightTheta=randomizer->Uniform(90.0, 180.0);
+//    lightTheta=randomizer->Uniform(TMath::Pi());
     
     // take theta distribution from fresco output
     // todo: the correct distribution for the corresponding beam energy and excitation energy has to be chosen
@@ -392,7 +392,8 @@ Int_t main(Int_t argc, char **argv){
       }
       
       Int_t st=(Int_t)randomizer->Uniform(maxState);
-      lightEnergy=reactionTemp[st]->ELab(lightTheta/180.0*TMath::Pi(),2);
+      //lightEnergy=reactionTemp[st]->ELab(lightTheta/180.0*TMath::Pi(),2);
+      lightEnergy=reactionTemp[st]->ELab(lightTheta,2);
 
       for(Int_t s=0; s<maxState; s++){
         delete reactionTemp[s];
@@ -406,7 +407,7 @@ Int_t main(Int_t argc, char **argv){
 
       //convert theta cm to theta lab
       Float_t lightThetaCM = lightTheta;
-      lightTheta = reaction[s]->Angle_cm2lab(reaction[s]->GetVcm(2), lightTheta);
+      //lightTheta = reaction[s]->Angle_cm2lab(reaction[s]->GetVcm(2), lightTheta); // conversion from cm to lab needed???
 
 
 
@@ -416,6 +417,7 @@ Int_t main(Int_t argc, char **argv){
 
       //lightEnergy=reaction[s]->ELab(lightTheta/180.0*TMath::Pi(),2);
       lightEnergy=reaction[s]->ELab(lightTheta,2);
+
 
 // changed for testing reasons
 // todo: keep this in mind !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
