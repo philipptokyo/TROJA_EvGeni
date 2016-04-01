@@ -361,14 +361,17 @@ Int_t main(Int_t argc, char **argv){
     // get the light ejectile energy for a certain theta
     // this energy depends on the beam energy
 
-    // first: get the theta
+    // choose the state populated
+    Int_t st=(Int_t)randomizer->Uniform(numberOfStates);
+
+    // get the theta
     // at the moment: only uniform theta distribution
     // todo: add physics here!!!!!
-//    lightTheta=randomizer->Uniform(TMath::Pi());
+    lightTheta=randomizer->Uniform(TMath::Pi());
     
     // take theta distribution from fresco output
     // todo: the correct distribution for the corresponding beam energy and excitation energy has to be chosen
-    lightTheta=histCScmFresco->GetRandom();
+//    lightTheta=histCScmFresco->GetRandom();
 
     
     // phi uniform
@@ -391,23 +394,35 @@ Int_t main(Int_t argc, char **argv){
         }
       }
       
-      Int_t st=(Int_t)randomizer->Uniform(maxState);
+      // todo: add fresco CS here
+      if(maxState<numberOfStates){
+        st=(Int_t)randomizer->Uniform(maxState);
+      }
+
       //lightEnergy=reactionTemp[st]->ELab(lightTheta/180.0*TMath::Pi(),2);
       lightEnergy=reactionTemp[st]->ELab(lightTheta,2);
 
-      for(Int_t s=0; s<maxState; s++){
+      for(Int_t s=0; s<numberOfStates; s++){
         delete reactionTemp[s];
       }
 
 
     }else{
       beamE=info->fBeamEnergy;
-      Int_t s=(Int_t)randomizer->Uniform(numberOfStates);
+      //Int_t s=(Int_t)randomizer->Uniform(numberOfStates);
       //printf("  taking index %d",s);
 
       //convert theta cm to theta lab
       Float_t lightThetaCM = lightTheta;
-      //lightTheta = reaction[s]->Angle_cm2lab(reaction[s]->GetVcm(2), lightTheta); // conversion from cm to lab needed???
+      
+      
+      //lightTheta-=TMath::Pi()/2.0;
+      lightTheta = reaction[st]->Angle_cm2lab(-reaction[st]->GetVcm(2), lightTheta); // conversion from cm to lab 
+
+      //lightTheta=TMath::ATan(TMath::Sin(lightTheta)/(TMath::Cos(lightTheta)+(lightMass/heavyMass)));
+      //lightTheta+=TMath::Pi()/2.0;
+
+      //printf("CM to Lab conversion: thetaCM = %f, thetaLab = %f,Vcm = %f, betaCM = %f\n", lightThetaCM, lightTheta, reaction[st]->GetVcm(2), reaction[st]->GetBetacm());
 
 
 
@@ -416,7 +431,7 @@ Int_t main(Int_t argc, char **argv){
       histCSlabVScm->Fill(lightThetaCM, lightTheta);
 
       //lightEnergy=reaction[s]->ELab(lightTheta/180.0*TMath::Pi(),2);
-      lightEnergy=reaction[s]->ELab(lightTheta,2);
+      lightEnergy=reaction[st]->ELab(lightTheta,2);
 
 
 // changed for testing reasons
@@ -431,20 +446,13 @@ Int_t main(Int_t argc, char **argv){
       TLorentzVector rec(dir,lightEnergy*1000+lightMass*1000);
       if(rec.Mag()>0)
         rec.SetRho( sqrt( (lightEnergy+lightMass)*(lightEnergy+lightMass) - lightMass*lightMass )*1000 );
-      excEn = reaction[s]->GetExcEnergy(rec)/1000.0; // MeV
+      excEn = reaction[st]->GetExcEnergy(rec)/1000.0; // MeV
       // printf("excitation energy %f\n", excEn);
 
 //      printf("Light theta cm %f,  lab %f, Vcm %f, energy %f\n", lightThetaCM, lightTheta, reaction[s]->GetVcm(2), lightEnergy);
 
     }
 
-
-    // continue in rad
-    // as required for geant4
-    //lightTheta*=TMath::Pi()/180.0;
-    
-    // phi uniform
-    lightPhi=randomizer->Uniform(2.0*TMath::Pi());
 
     TVector3 direction(0.0, 0.0, -1.0);
 
@@ -529,6 +537,9 @@ Int_t main(Int_t argc, char **argv){
   histCScm->Write("histCScm");
   histCSlab->Write("histCSlab");
   histCSlabVScm->Write("histCSlabVScm");
+
+  //histCSlab->Draw();
+  //histCSlabVScm->Draw();
 
   outfile->Close();
   
