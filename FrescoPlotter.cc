@@ -13,6 +13,8 @@ FrescoPlotter::FrescoPlotter(){
 
 FrescoPlotter::FrescoPlotter(InputInfo* info){
   fInfo=info;
+  fNumberOfStates=-1;
+
 }
 
 FrescoPlotter::~FrescoPlotter(){
@@ -116,17 +118,21 @@ void FrescoPlotter::CreateHistograms(){
                   printf("Got reaction: %s\n", cTemp[0]);
                   Int_t pos[3]={-1};
                   string sReac = cTemp[0];
+                  
                   pos[0]=sReac.find("(");
                   pos[1]=sReac.find(",");
                   pos[2]=sReac.find(")");
+                  
                   sReac.copy(fProj,pos[0],0);
                   sReac.copy(fTarg,pos[1]-pos[0], pos[0]+1);
                   sReac.copy(fReco,pos[2]-pos[1], pos[1]+1);
                   sReac.copy(fEjec,sReac.size()-pos[2], pos[2]+1);
+                  
                   fProj[pos[0]]='\0';
                   fTarg[pos[1]-pos[0]-1]='\0';
                   fReco[pos[2]-pos[1]-1]='\0';
                   fEjec[sReac.size()-pos[2]-1]='\0';
+                  
                   printf("proj = %s, targ = %s, reco = %s, ejec = %s\n", fProj, fTarg, fReco, fEjec);
 
                   // get number of nucleons in projectile
@@ -270,19 +276,23 @@ void FrescoPlotter::CreateHistograms(){
         Float_t min = angle[0][0]*deg2rad;
         Float_t max = (angle[0][entry-1]+(angle[0][entry-1]-angle[0][0])/entry)*deg2rad;
 	
-        fHistCSelast = new TH1F("CSelast","Cross Sections, elastic scattering", entry, min, max);
-        for(Int_t e=0; e<entry; e++){
-          fHistCSelast->SetBinContent(e+1, crossSection[0][e]);
-        }
+        //fHistCSelast = new TH1F("CSelast","Cross Sections, elastic scattering", entry, min, max);
+        //for(Int_t e=0; e<entry; e++){
+        //  fHistCSelast->SetBinContent(e+1, crossSection[0][e]);
+        //}
 
 
-        for(Int_t s=1; s<maxNumberOfStates+1; s++){
+        for(Int_t s=0; s<maxNumberOfStates+1; s++){
           sprintf(cTemp[0], "CSstate%02d", s);
-          sprintf(cTemp[1], "Cross Sections, transfer to state %d", s);
-          fHistCS[s-1]=new TH1F(cTemp[0] ,cTemp[1] , entry, min, max);
+          if(s==0){
+            sprintf(cTemp[1], "Cross Sections, elastic scattering");
+          }else{
+            sprintf(cTemp[1], "Cross Sections, transfer to state %d", s);
+          }
+          fHistCS[s]=new TH1F(cTemp[0] ,cTemp[1] , entry, min, max);
 
           for(Int_t e=0; e<entry; e++){
-            fHistCS[s-1]->SetBinContent(e+1, crossSection[s][e]);
+            fHistCS[s]->SetBinContent(e+1, crossSection[s][e]);
           }
         }
         
@@ -297,4 +307,34 @@ void FrescoPlotter::CreateHistograms(){
 
 }
 
+void FrescoPlotter::UpdateInput(){
+  /**
+  This function overwrites the level scheme given in InputInfo
+  according to the data extracted from fresco output
+  */
+  
+  if(fNumberOfStates==-1){
+    printf("Warning: Update of input information about excited states is not possible, because updated information are not available. (Maybe fresco output file hasn't been read, yet?)\nSkipping the update...\n");
+    return;
+  }
+  
+  printf("Info: FrescoPlotter overwrites the excited states given in input textfile!\n");
 
+  fInfo->fNumberOfStates = fNumberOfStates;
+  for(Int_t s=0; s<fNumberOfStates; s++){
+    fInfo->fStateEnergy[s] = fStateEnergy[s+1];
+  }
+
+  fInfo->fBeamEnergy = fBeamEnergy;
+  printf("Beam energy set to %f MeV/u (%f MeV)\n", fInfo->fBeamEnergy, fInfo->fBeamEnergy * fInfo->fProjA);
+
+  if((fProjA != fInfo->fProjA) || (fEjecA != (fInfo->fProjA + fInfo->fTargetA - fInfo->fLightA))){
+    printf("Error: Projectile and/or Ejectile are not the same in input text file and fresco output text file:\n");
+    printf("Input:  projectile A = %d, ejectile A = %d\n", fInfo->fProjA, (fInfo->fProjA + fInfo->fTargetA - fInfo->fLightA));
+    printf("Fresco: projectile A = %d, ejectile A = %d\n", fProjA, fEjecA);
+    abort();
+  }
+
+  return;
+
+}

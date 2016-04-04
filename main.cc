@@ -53,47 +53,56 @@ Int_t main(Int_t argc, char **argv){
   info->parse(argv[1]);
 
   Int_t numberOfStates=info->fNumberOfStates;
-  Float_t maxExEnergy=info->fMaxExEnergy;
-  Float_t stateEnergy[maxNumberOfStates]={0.0};
+  //Float_t maxExEnergy=info->fMaxExEnergy;
+  Float_t stateEnergy[maxNumberOfStates+1]={0.0}; // index 0 is elastic
   
-  
-  FrescoPlotter* frescoPlotter = new FrescoPlotter(info);
-   
-  frescoPlotter->CreateHistograms();
-  
-  TH1F* histCScmFresco = frescoPlotter->GetHistogramState(1); // todo: remove this one!!
-
-  TH1F* histCScmFrescoElast = frescoPlotter->GetHistogramElastic();
-  TH1F* histCScmFrescoStates[maxNumberOfStates];
-
-  numberOfStates=frescoPlotter->GetNumberOfStates();
-
-  for(Int_t h=0; h<numberOfStates; h++){
-    histCScmFrescoStates[h] = frescoPlotter->GetHistogramState(h);
-  }
-
-
-  TCanvas* canCS = new TCanvas();
-  canCS->Divide(4,3);
-  canCS->cd(1);
-  histCScmFrescoElast->Draw();
-  for(Int_t h=0; h<numberOfStates; h++){
-    canCS->cd(h+2);
-    histCScmFrescoStates[h]->Draw();
-  }
-
-  theApp->Run();
-
-
-  //histCScmFresco->Draw();
-  //theApp->Run();
-
-  // determine binning
+  // for binning of histograms
   Int_t binN;
   Double_t binL, binU;
-  binN = histCScmFresco->GetXaxis()->GetNbins();
-  binL = histCScmFresco->GetXaxis()->GetBinLowEdge(0);
-  binU = histCScmFresco->GetXaxis()->GetBinUpEdge(binN);
+  TH1F* histCScmFresco[maxNumberOfStates+1];
+  
+  if(info->HaveFrescoFileName()){
+    FrescoPlotter* frescoPlotter = new FrescoPlotter(info);
+     
+    frescoPlotter->CreateHistograms();
+    frescoPlotter->UpdateInput();
+    
+    //TH1F* histCScmFresco = frescoPlotter->GetHistogramState(1); // todo: remove this one!!
+
+    //TH1F* histCScmFrescoElast = frescoPlotter->GetHistogramElastic();
+    //TH1F* histCScmFresco[maxNumberOfStates+1];
+
+    numberOfStates=frescoPlotter->GetNumberOfStates();
+
+    for(Int_t h=0; h<numberOfStates+1; h++){
+      histCScmFresco[h] = frescoPlotter->GetHistogramState(h);
+    }
+
+
+    //TCanvas* canCS = new TCanvas();
+    //canCS->Divide(4,3);
+    ////canCS->cd(1);
+    ////histCScmFrescoElast->Draw();
+    //for(Int_t h=0; h<numberOfStates+1; h++){
+    //  canCS->cd(h+1);
+    //  histCScmFresco[h]->Draw();
+    //}
+
+    //theApp->Run();
+
+
+    //histCScmFresco->Draw();
+    //theApp->Run();
+
+    // determine binning
+    binN = histCScmFresco[0]->GetXaxis()->GetNbins();
+    binL = histCScmFresco[0]->GetXaxis()->GetBinLowEdge(0);
+    binU = histCScmFresco[0]->GetXaxis()->GetBinUpEdge(binN);
+  }else{ // no fresco file
+    binN = 180;
+    binL = 0.0;
+    binU = TMath::Pi();
+  }
 
 
   TH1F* histCScm = new TH1F("histCScm","", binN, binL, binU);
@@ -102,7 +111,7 @@ Int_t main(Int_t argc, char **argv){
 
   binN = 180;
   binL = 0.0;
-  binU = 360.0;
+  binU = 180.0;
 
   TH1F* histCScmDeg = new TH1F("histCScmDeg","", binN, binL, binU);
   TH1F* histCSlabDeg = new TH1F("histCSlabDeg","", binN, binL, binU);
@@ -137,13 +146,16 @@ Int_t main(Int_t argc, char **argv){
 
   printf("Set:\n");
   if(numberOfStates>1){
-    for(Int_t s=0; s<numberOfStates; s++){
-      stateEnergy[s]=(Float_t)s * maxExEnergy / (Float_t)(numberOfStates-1); // todo: get it from frescoplotter
+    for(Int_t s=0; s<numberOfStates+1; s++){
+      //stateEnergy[s]=(Float_t)s * maxExEnergy / (Float_t)(numberOfStates-1); // todo: get it from frescoplotter
+      stateEnergy[s]=info->fStateEnergy[s];
       printf("  state %d, energy %f\n", s, stateEnergy[s]);
+
       if(!(info->ProfileBeamE()) && stateEnergy[s]>beamE){
-        cout << "Error: state energy is larger than beam energy!" << endl;
-        return 0;
+        cout << "Warning: state energy is larger than beam energy! This might buggy!" << endl;
+        //return 0;
       }
+
     }
   }else{
     // stateEnergy[0] is already 0
@@ -181,12 +193,13 @@ Int_t main(Int_t argc, char **argv){
   lightMass=reco->GetMass();
   heavyMass=ejec->GetMass();
   
-  Kinematics* reaction[maxNumberOfStates];
-  for(Int_t s=0; s<numberOfStates; s++){
+  Kinematics* reaction[maxNumberOfStates+1];
+  reaction[0] = new Kinematics(proj, targ, targ, proj, beamE*projA, stateEnergy[0]); // elastic scattering
+  for(Int_t s=1; s<numberOfStates+1; s++){
      reaction[s] = new Kinematics(proj, targ, reco, ejec, beamE*projA, stateEnergy[s]);
   }
 
-  qValue=reaction[0]->GetQValue();
+  qValue=reaction[1]->GetQValue();
   
    
   printf("Nuclear masses: projectile %6.10f, target %6.10f, light ejectile %6.10f, heavy ejectile %6.10f; Q-value %f\n", projMass, targetMass, lightMass, heavyMass, qValue); 
@@ -197,7 +210,7 @@ Int_t main(Int_t argc, char **argv){
   if(!(info->HaveOedoSimFileName()) && 
       ((info->ProfileBeamE()) || (info->ProfileBeamX()) || (info->ProfileBeamY()) || (info->ProfileBeamA()) || (info->ProfileBeamB()) )){
     cout << "ERROR! Beam profiling requested, but no root file for beam profile is given!" << endl;
-    return 0;
+    abort();
   }
 
 
@@ -233,7 +246,7 @@ Int_t main(Int_t argc, char **argv){
   if(!(info->HaveOedoSimFileName()) && 
       ((info->ProfileBeamE()) || (info->ProfileBeamX()) || (info->ProfileBeamY()) || (info->ProfileBeamA()) || (info->ProfileBeamB()) )){
     cout << "ERROR! Beam profiling requested, but no root file for beam profile is given!" << endl;
-    return 0;
+    abort();
   }
 
    
@@ -244,7 +257,7 @@ Int_t main(Int_t argc, char **argv){
     if(!fileBeamProfile){
       cout << "Error! OEDO beam simulation file not found! " << endl;
       cout << "Please check the file name 'beam_profile_file_oedo' in the input text file!" << endl;
-      return 0;
+      abort();
     }
 
     cout << "Getting Tree ..." << endl;
@@ -252,7 +265,7 @@ Int_t main(Int_t argc, char **argv){
     
     if(!treeBeamProfile){
       cout << "Tree 'events' not found in root file!" << endl;
-      return 0;
+      abort();
     }
 
     //treeBeamProfile->SetBranchAddress("fhxout", fhxout); // full sim file
@@ -280,13 +293,14 @@ Int_t main(Int_t argc, char **argv){
   // light ejectile position and flight direction
   Double_t lightEnergy=0.0, // energy in MeV 
            lightTheta=0.0, // theta in rad
+           lightThetaCM=0.0,
            lightPhi=0.0; // phi in rad
   Int_t lightPdgId=2212; //proton
   //Int_t heavyPdgId=1000501330; // 133Sn
   Int_t eventNumber=0;
 
+  Int_t state=0; // aux, which state is populated
   Float_t excEn=0.0, missMass=0.0;
-  //Float_t heavyMass2=0.0;
 
   TTree *events = new TTree();
   events->Branch("eventNumber", &eventNumber, "eventNumber/I");
@@ -295,6 +309,7 @@ Int_t main(Int_t argc, char **argv){
   events->Branch("lightPdgId",&lightPdgId, "lightPdgId/I");
   events->Branch("lightEnergy",&lightEnergy, "lightEnergy/D");
   events->Branch("lightTheta",&lightTheta, "lightTheta/D");
+  events->Branch("lightThetaCM",&lightThetaCM, "lightThetaCM/D");
   events->Branch("lightPhi",&lightPhi, "lightPhi/D");
   
   // projectile data
@@ -306,8 +321,8 @@ Int_t main(Int_t argc, char **argv){
   events->Branch("beamB", &beamB, "beamB/F");
   events->Branch("beamTheta", &beamTheta, "beamTheta/F");
   events->Branch("beamPhi", &beamPhi, "beamPhi/F");
+  events->Branch("state", &state, "state/I");
   events->Branch("excitationEnergy", &excEn, "excitationEnergy/F");
-  //events->Branch("heavyMass2", &heavyMass2, "heavyMass2/F");
   events->Branch("missingMass", &missMass, "missingMass/F");
 
 
@@ -347,21 +362,23 @@ Int_t main(Int_t argc, char **argv){
 
     eventNumber=i; // for the tree
     
-     if(i%10000==0){
-       printf("%i events generated (%i requested)\n", i, info->fNumberEvents);
-     }
+    if((i-1)%100000==0){
+      printf("%i events generating... (%i requested)\n", i, info->fNumberEvents);
+    }
 
 
     // get beam information
-    if(info->HaveOedoSimFileName()){ // todo: check if any information is needed from tree before reading it
+    // get first the information of the beam profile 
+    // and reset afterwards those information which are not asked to be profiled
+    if(info->HaveOedoSimFileName()){ 
 
       // shortened oedo sim file contains only good events
       Int_t rndmEvnt = (Int_t)randomizer->Uniform(beamNoEvents);
       treeBeamProfile->GetEvent(rndmEvnt);
 
     }else{ // no beam profile
-
-      // these lines are somehow redundant
+      
+      // these lines are somehow redundant and not needed
       beamA=0.0;
       beamB=0.0;
       beamX=0.0;
@@ -370,6 +387,16 @@ Int_t main(Int_t argc, char **argv){
       beamE=info->fBeamEnergy;
     }
 
+    // reset/keep information of not profiled beam
+    if(!info->ProfileBeamX()){
+      beamX=0.0;
+    }
+    if(!info->ProfileBeamY()){
+      beamY=0.0;
+    }
+    if(!info->ProfileBeamE()){
+      beamE=info->fBeamEnergy;
+    }
 
     // calculate theta and phi of beam at target
     TVector3 vBeam(0.0, 0.0, 1.0);
@@ -389,112 +416,105 @@ Int_t main(Int_t argc, char **argv){
     beamTheta=vBeam.Theta();
     beamPhi=vBeam.Phi();
 
-    if(!info->ProfileBeamX()){
-      beamX=0.0;
+
+
+
+    // check if all states can be populated
+    Int_t maxState=numberOfStates+1;
+    for(Int_t s=0; s<numberOfStates+1; s++){
+      if(beamE < stateEnergy[s]){
+        maxState=s;
+        ignoredState++;
+        cout << "Warning: state at " << stateEnergy[s] << " MeV is larger than beam energy (" << beamE << " MeV/u)! This state will be ignored! Using only " << maxState << " states!" << endl;
+        break;
+      }
     }
-    if(!info->ProfileBeamY()){
-      beamY=0.0;
-    }
-
-
-    // get the light ejectile energy for a certain theta
-    // this energy depends on the beam energy
-
+    
+    
     // choose the state populated
-    Int_t st=(Int_t)randomizer->Uniform(numberOfStates);
+    // todo: they should be chosen from total cross section for each populated state
+    state=(Int_t)randomizer->Uniform(maxState);
 
-    // get the theta
-    // at the moment: only uniform theta distribution
-    // todo: add physics here!!!!!
-//    lightTheta=randomizer->Uniform(TMath::Pi());
-    
-    // take theta distribution from fresco output
-    // todo: the correct distribution for the corresponding beam energy and excitation energy has to be chosen
-    lightTheta=histCScmFresco->GetRandom();
+// ignore elastic scattering for bug fixing ...
+//state=(Int_t)(randomizer->Uniform(maxState-1))+1;
 
     
+    if(info->HaveFrescoFileName()){
+      // take theta distribution from fresco output
+      // todo: beam energy profile needs to be taken into account!
+      lightTheta=histCScmFresco[state]->GetRandom();
+    }else{
+      // uniform in CM system
+      lightTheta=randomizer->Uniform(TMath::Pi());
+    }
+    
+    lightThetaCM = lightTheta; 
+
+
     // phi uniform
     lightPhi=randomizer->Uniform(2.0*TMath::Pi());
 
 
-
+    Kinematics* reactionTemp;
+    
     if(info->ProfileBeamE()){
 
-      Int_t maxState=numberOfStates;
-      Kinematics* reactionTemp[maxNumberOfStates];
-      for(Int_t s=0; s<numberOfStates; s++){
-        if(beamE>stateEnergy[s]){
-          reactionTemp[s] = new Kinematics(proj, targ, reco, ejec, beamE*projA, stateEnergy[s]);
-        }else{
-          maxState=s;
-          ignoredState++;
-          cout << "Warning: state at " << stateEnergy[s] << " MeV is larger than beam energy (" << beamE << " MeV)! This state will be ignored! Using only " << maxState << " states!" << endl;
-          break;
-        }
+      if(state==0){
+        reactionTemp = new Kinematics(proj, targ, targ, proj, beamE*projA, stateEnergy[0]);
+      }else{
+        reactionTemp = new Kinematics(proj, targ, reco, ejec, beamE*projA, stateEnergy[state]);
       }
-      
-      // todo: add fresco CS here
-      if(maxState<numberOfStates){
-        st=(Int_t)randomizer->Uniform(maxState);
-      }
-
-      //lightEnergy=reactionTemp[st]->ELab(lightTheta/180.0*TMath::Pi(),2);
-      lightEnergy=reactionTemp[st]->ELab(lightTheta,2);
-
-      for(Int_t s=0; s<numberOfStates; s++){
-        delete reactionTemp[s];
-      }
-
 
     }else{
-      beamE=info->fBeamEnergy;
-      //Int_t s=(Int_t)randomizer->Uniform(numberOfStates);
-      //printf("  taking index %d",s);
-
-      //convert theta cm to theta lab
-      Float_t lightThetaCM = lightTheta;
+      reactionTemp = reaction[state];
+    }
       
-      
-      //lightTheta-=TMath::Pi()/2.0;
-      lightTheta = reaction[st]->Angle_cm2lab(-reaction[st]->GetVcm(2), lightTheta); // conversion from cm to lab 
+    lightTheta = reactionTemp->Angle_cm2lab(-reactionTemp->GetVcm(2), lightTheta); // conversion from cm to lab
+        
+    lightEnergy=reactionTemp->ELab(lightTheta,2);
 
-      //lightTheta=TMath::ATan(TMath::Sin(lightTheta)/(TMath::Cos(lightTheta)+(lightMass/heavyMass)));
-      //lightTheta+=TMath::Pi()/2.0;
-
-      //printf("CM to Lab conversion: thetaCM = %f, thetaLab = %f,Vcm = %f, betaCM = %f\n", lightThetaCM, lightTheta, reaction[st]->GetVcm(2), reaction[st]->GetBetacm());
+      //delete reactionTemp;
 
 
-
-      histCScm->Fill(lightThetaCM);
-      histCSlab->Fill(lightTheta);
-      histCSlabVScm->Fill(lightThetaCM, lightTheta);
-
-      histCScmDeg->Fill(lightThetaCM*180.0/TMath::Pi());
-      histCSlabDeg->Fill(lightTheta*180.0/TMath::Pi());
-      histCSlabVScmDeg->Fill(lightThetaCM*180.0/TMath::Pi(), lightTheta*180.0/TMath::Pi());
-
-      //lightEnergy=reaction[s]->ELab(lightTheta/180.0*TMath::Pi(),2);
-      lightEnergy=reaction[st]->ELab(lightTheta,2);
+    
+    //printf("CM to Lab conversion: thetaCM = %f, thetaLab = %f,Vcm = %f, betaCM = %f\n", lightThetaCM, lightTheta, reaction[st]->GetVcm(2), reaction[st]->GetBetacm());
 
 
-// changed for testing reasons
-// todo: keep this in mind !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    histCScm->Fill(lightThetaCM);
+    histCSlab->Fill(lightTheta);
+    histCSlabVScm->Fill(lightThetaCM, lightTheta);
+
+    histCScmDeg->Fill(lightThetaCM*180.0/TMath::Pi());
+    histCSlabDeg->Fill(lightTheta*180.0/TMath::Pi());
+    histCSlabVScmDeg->Fill(lightThetaCM*180.0/TMath::Pi(), lightTheta*180.0/TMath::Pi());
+
+    //lightEnergy=reaction[s]->ELab(lightTheta/180.0*TMath::Pi(),2);
+
+
+// constant kinetic energy for testing reasons
 //lightEnergy=beamE;
 
-      //printf("  ELab is %f\n", lightEnergy);
+    //printf("  ELab is %f\n", lightEnergy);
 
-      TVector3 dir(0,0,1);
-      //dir.SetTheta(lightTheta/180.0*TMath::Pi());
-      dir.SetTheta(lightTheta);
-      TLorentzVector rec(dir,lightEnergy*1000+lightMass*1000);
-      if(rec.Mag()>0)
-        rec.SetRho( sqrt( (lightEnergy+lightMass)*(lightEnergy+lightMass) - lightMass*lightMass )*1000 );
-      excEn = reaction[st]->GetExcEnergy(rec)/1000.0; // MeV
-      // printf("excitation energy %f\n", excEn);
-
-//      printf("Light theta cm %f,  lab %f, Vcm %f, energy %f\n", lightThetaCM, lightTheta, reaction[s]->GetVcm(2), lightEnergy);
-
+    
+      
+    // get excitation energy
+    // for later cross-checks
+    TVector3 dir(0,0,1);
+    //dir.SetTheta(lightTheta/180.0*TMath::Pi());
+    dir.SetTheta(lightTheta);
+    TLorentzVector rec(dir,lightEnergy*1000+lightMass*1000);
+    if(rec.Mag()>0){
+      rec.SetRho( sqrt( (lightEnergy+lightMass)*(lightEnergy+lightMass) - lightMass*lightMass )*1000 );
     }
+    excEn = reactionTemp->GetExcEnergy(rec)/1000.0; // MeV
+    
+    //delete reactionTemp;
+
+    //printf("Light theta cm %f,  lab %f, Vcm %f, energy %f\n", lightThetaCM, lightTheta, reaction[s]->GetVcm(2), lightEnergy);
+
+    
 
 
     TVector3 direction(0.0, 0.0, -1.0);
@@ -576,7 +596,11 @@ Int_t main(Int_t argc, char **argv){
   outfile->cd();
 
   events->Write("events");
-  histCScmFresco->Write("histCScmFresco");
+  if(info->HaveFrescoFileName()){
+    for(Int_t s=0; s<numberOfStates+1; s++){
+      histCScmFresco[s]->Write(Form("histCScmFresco_%02d", s));
+    }
+  }
   histCScm->Write("histCScm");
   histCScmDeg->Write("histCScmDeg");
   histCSlab->Write("histCSlab");

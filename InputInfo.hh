@@ -3,6 +3,8 @@
 
 #include "LibPerso.h"
 
+#define maxNumberOfStates 10
+
 class InputInfo
 {
 	public:
@@ -24,11 +26,13 @@ class InputInfo
         // for reaction and event generator
         Int_t fProjA, fProjZ, fTargetA, fTargetZ, fLightA, fLightZ;
         Int_t fNumberOfStates;
-        Float_t fMaxExEnergy;
+        //Float_t fMaxExEnergy;
+        Float_t fStateEnergy[maxNumberOfStates+1]; // index 0 is elastic
 	Float_t fBeamEnergy;
 
         // event generator related
         Bool_t HaveOedoSimFileName(){return fHaveOedoSimFileName;};
+        Bool_t HaveFrescoFileName(){return fHaveFrescoFileName;};
         Bool_t ProfileBeamE(){return fProfileE;};
         Bool_t ProfileBeamX(){return fProfileX;};
         Bool_t ProfileBeamY(){return fProfileY;};
@@ -56,6 +60,7 @@ class InputInfo
        
         
         Bool_t fHaveOedoSimFileName; 
+        Bool_t fHaveFrescoFileName;
         Bool_t fProfileE, fProfileX, fProfileY, fProfileA, fProfileB; 
         	
 	

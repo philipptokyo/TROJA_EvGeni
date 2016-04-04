@@ -6,7 +6,7 @@
 
 #include "InputInfo.hh"
 
-#define maxNumberOfStates 10
+// #define maxNumberOfStates 10 // is now defined in InputInfo.hh
 
 class FrescoPlotter
 {
@@ -18,6 +18,7 @@ class FrescoPlotter
   ~FrescoPlotter();
 
   void CreateHistograms();
+  void UpdateInput();
 
   // getter
   char GetNameProjectile(){return fProj[10]; }
@@ -32,7 +33,7 @@ class FrescoPlotter
   Float_t GetBeamEnergyAMeV(){return fBeamEnergy;}
   Float_t GetBeamEnergyMeV(){return fBeamEnergy*fProjA;}
 
-  TH1F* GetHistogramElastic(){return fHistCSelast;}
+  //TH1F* GetHistogramElastic(){return fHistCSelast;}
   TH1F* GetHistogramState(Int_t s){return fHistCS[s];}
 
   private:
@@ -43,10 +44,10 @@ class FrescoPlotter
   Float_t fBeamEnergy;
   Int_t fNumberOfStates;
   //const Int_t maxNumberOfStates=10;
-  Float_t fStateEnergy[maxNumberOfStates+1]; // index 0 is elasic
+  Float_t fStateEnergy[maxNumberOfStates+1]; // index 0 is elasic (should be 0)
 
-  TH1F *fHistCSelast;
-  TH1F *fHistCS[maxNumberOfStates];
+  //TH1F *fHistCSelast;
+  TH1F *fHistCS[maxNumberOfStates+1];
 
 
 };
