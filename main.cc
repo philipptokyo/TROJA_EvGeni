@@ -52,8 +52,38 @@ Int_t main(Int_t argc, char **argv){
   //get information from textfile
   info->parse(argv[1]);
 
+  Int_t numberOfStates=info->fNumberOfStates;
+  Float_t maxExEnergy=info->fMaxExEnergy;
+  Float_t stateEnergy[maxNumberOfStates]={0.0};
+  
+  
   FrescoPlotter* frescoPlotter = new FrescoPlotter(info);
-  TH1F* histCScmFresco = frescoPlotter->CreateHistogram();
+   
+  frescoPlotter->CreateHistograms();
+  
+  TH1F* histCScmFresco = frescoPlotter->GetHistogramState(1); // todo: remove this one!!
+
+  TH1F* histCScmFrescoElast = frescoPlotter->GetHistogramElastic();
+  TH1F* histCScmFrescoStates[maxNumberOfStates];
+
+  numberOfStates=frescoPlotter->GetNumberOfStates();
+
+  for(Int_t h=0; h<numberOfStates; h++){
+    histCScmFrescoStates[h] = frescoPlotter->GetHistogramState(h);
+  }
+
+
+  TCanvas* canCS = new TCanvas();
+  canCS->Divide(4,3);
+  canCS->cd(1);
+  histCScmFrescoElast->Draw();
+  for(Int_t h=0; h<numberOfStates; h++){
+    canCS->cd(h+2);
+    histCScmFrescoStates[h]->Draw();
+  }
+
+  theApp->Run();
+
 
   //histCScmFresco->Draw();
   //theApp->Run();
@@ -88,6 +118,10 @@ Int_t main(Int_t argc, char **argv){
   
 
 
+  TRandom3 *randomizer=new TRandom3();  
+  randomizer->SetSeed(0);
+  
+
   Int_t projA=info->fProjA;
   Int_t projZ=info->fProjZ;
   Int_t targetA=info->fTargetA;
@@ -95,19 +129,16 @@ Int_t main(Int_t argc, char **argv){
   Int_t lightA=info->fLightA;
   Int_t lightZ=info->fLightZ;
   
-  const Int_t maxNumberOfStates=5;
-  Int_t numberOfStates=info->fNumberOfStates;
+  //const Int_t maxNumberOfStates=5; // defined in FrescoPlotter.hh
   if(numberOfStates>maxNumberOfStates){
     cout << "Error: maximum number of states is " << maxNumberOfStates << "! You requested " << numberOfStates << endl;
     return 0;
   }
-  Float_t maxExEnergy=info->fMaxExEnergy;
 
-  Float_t stateEnergy[maxNumberOfStates]={0.0};
   printf("Set:\n");
   if(numberOfStates>1){
     for(Int_t s=0; s<numberOfStates; s++){
-      stateEnergy[s]=(Float_t)s * maxExEnergy / (Float_t)(numberOfStates-1);
+      stateEnergy[s]=(Float_t)s * maxExEnergy / (Float_t)(numberOfStates-1); // todo: get it from frescoplotter
       printf("  state %d, energy %f\n", s, stateEnergy[s]);
       if(!(info->ProfileBeamE()) && stateEnergy[s]>beamE){
         cout << "Error: state energy is larger than beam energy!" << endl;
@@ -171,10 +202,6 @@ Int_t main(Int_t argc, char **argv){
 
 
 
-
-  TRandom3 *randomizer=new TRandom3();  
-  randomizer->SetSeed(0);
-  
   
   TFile* outfile = new TFile(info->fOutFileNameMakeEvents, "recreate");
   
