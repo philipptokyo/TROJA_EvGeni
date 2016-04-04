@@ -55,6 +55,9 @@ Int_t main(Int_t argc, char **argv){
   FrescoPlotter* frescoPlotter = new FrescoPlotter(info);
   TH1F* histCScmFresco = frescoPlotter->CreateHistogram();
 
+  //histCScmFresco->Draw();
+  //theApp->Run();
+
   // determine binning
   Int_t binN;
   Double_t binL, binU;
@@ -66,6 +69,15 @@ Int_t main(Int_t argc, char **argv){
   TH1F* histCScm = new TH1F("histCScm","", binN, binL, binU);
   TH1F* histCSlab = new TH1F("histCSlab","", binN, binL, binU);
   TH2F* histCSlabVScm = new TH2F("histCSlabVScm", "", binN, binL, binU, binN, binL, binU);
+
+  binN = 180;
+  binL = 0.0;
+  binU = 360.0;
+
+  TH1F* histCScmDeg = new TH1F("histCScmDeg","", binN, binL, binU);
+  TH1F* histCSlabDeg = new TH1F("histCSlabDeg","", binN, binL, binU);
+  TH2F* histCSlabVScmDeg = new TH2F("histCSlabVScmDeg", "", binN, binL, binU, binN, binL, binU);
+
 
   
   Float_t beamE=info->fBeamEnergy;    // in MeV/u
@@ -367,11 +379,11 @@ Int_t main(Int_t argc, char **argv){
     // get the theta
     // at the moment: only uniform theta distribution
     // todo: add physics here!!!!!
-    lightTheta=randomizer->Uniform(TMath::Pi());
+//    lightTheta=randomizer->Uniform(TMath::Pi());
     
     // take theta distribution from fresco output
     // todo: the correct distribution for the corresponding beam energy and excitation energy has to be chosen
-//    lightTheta=histCScmFresco->GetRandom();
+    lightTheta=histCScmFresco->GetRandom();
 
     
     // phi uniform
@@ -429,6 +441,10 @@ Int_t main(Int_t argc, char **argv){
       histCScm->Fill(lightThetaCM);
       histCSlab->Fill(lightTheta);
       histCSlabVScm->Fill(lightThetaCM, lightTheta);
+
+      histCScmDeg->Fill(lightThetaCM*180.0/TMath::Pi());
+      histCSlabDeg->Fill(lightTheta*180.0/TMath::Pi());
+      histCSlabVScmDeg->Fill(lightThetaCM*180.0/TMath::Pi(), lightTheta*180.0/TMath::Pi());
 
       //lightEnergy=reaction[s]->ELab(lightTheta/180.0*TMath::Pi(),2);
       lightEnergy=reaction[st]->ELab(lightTheta,2);
@@ -535,8 +551,11 @@ Int_t main(Int_t argc, char **argv){
   events->Write("events");
   histCScmFresco->Write("histCScmFresco");
   histCScm->Write("histCScm");
+  histCScmDeg->Write("histCScmDeg");
   histCSlab->Write("histCSlab");
+  histCSlabDeg->Write("histCSlabDeg");
   histCSlabVScm->Write("histCSlabVScm");
+  histCSlabVScmDeg->Write("histCSlabVScmDeg");
 
   //histCSlab->Draw();
   //histCSlabVScm->Draw();

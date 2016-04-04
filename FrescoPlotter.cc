@@ -38,7 +38,15 @@ TH1F* FrescoPlotter::CreateHistogram(){
 	
 	const Int_t columns=23;
         const Int_t arraySize = 200;
+        const Float_t deg2rad = TMath::Pi()/180.0;
 	
+        //todo: put this in header
+        char proj[10], targ[10], reco[10], ejec[10];
+        Int_t projA=0, ejecA=0;
+        Int_t numberOfStates=0;
+        const Int_t maxNumberOfStates=10;
+        Float_t stateEnergy[maxNumberOfStates]={0.0};
+
 	
 	
 // 	cout << "Input file: " << info->infilename << endl;
@@ -51,8 +59,8 @@ TH1F* FrescoPlotter::CreateHistogram(){
 	
 	
 	//variables to read from text file
-	Float_t angle[arraySize]={-1.0};
-	Float_t crossSection[arraySize]={-1.0};
+	Float_t angle[maxNumberOfStates+1][arraySize]={{-1.0}};
+	Float_t crossSection[maxNumberOfStates+1][arraySize]={{-1.0}};
 	
         ifstream fin;
 	
@@ -77,7 +85,7 @@ TH1F* FrescoPlotter::CreateHistogram(){
 	//create the root file 
 	// for the histograms obtained from talys
 //	TFile *outfile = new TFile(argv[2], "recreate");
-
+        
         ULong64_t counter = 0;	
         Int_t entry = 0;
 	cout << "Parsing of fresco file" << endl;
@@ -102,15 +110,97 @@ TH1F* FrescoPlotter::CreateHistogram(){
 		for(Int_t i=0; i<columns; i++){
 			iss >> cTemp[i];
 		}
-		
+	        
+                // get reaction	
+                if(counter==3 ){
+                  printf("Got reaction: %s\n", cTemp[0]);
+                  Int_t pos[3]={-1};
+                  string sReac = cTemp[0];
+                  pos[0]=sReac.find("(");
+                  pos[1]=sReac.find(",");
+                  pos[2]=sReac.find(")");
+                  sReac.copy(proj,pos[0],0);
+                  sReac.copy(targ,pos[1]-pos[0], pos[0]+1);
+                  sReac.copy(reco,pos[2]-pos[1], pos[1]+1);
+                  sReac.copy(ejec,sReac.size()-pos[2], pos[2]+1);
+                  proj[pos[0]]='\0';
+                  targ[pos[1]-pos[0]-1]='\0';
+                  reco[pos[2]-pos[1]-1]='\0';
+                  ejec[sReac.size()-pos[2]-1]='\0';
+                  printf("proj = %s, targ = %s, reco = %s, ejec = %s\n", proj, targ, reco, ejec);
+
+                  // get number of nucleons in projectile
+                  projA = atoi(proj);
+                  ejecA = atoi(ejec);
+
+                  Float_t beamEnergy = atof(cTemp[5]);
+                  printf("Beam energy is %f MeV/u, %f MeV \n", beamEnergy, beamEnergy*projA);
+
+                }
+
+                // get number of states and their energies in outgoing channel
+                if((strcmp(cTemp[0],"***********")==0) && (strcmp(cTemp[1],"PARTITION")==0) && (strcmp(cTemp[2],"NUMBER")==0) && (strcmp(cTemp[3],"2")==0)){
+
+                  getline(fin,line);
+                  getline(fin,line);
+                  //printf("Line: %s\n", line.c_str());
+
+		  std::istringstream iss2(line);
+                  for(Int_t i=0; i<columns; i++){
+                    iss2 >> cTemp[i];
+                    //printf("%s ", cTemp[i]);
+                  }
+
+                  numberOfStates=atoi(cTemp[6]);
+                  printf("Found %i states \n", numberOfStates);
+                  if(numberOfStates>maxNumberOfStates){
+                    printf("Error: Found more states (%d) than array size allows (%d). Please incease the array size (FrescoPlotter.cc)\n", numberOfStates, maxNumberOfStates);
+                    abort();
+                  }
+
+                  while(strcmp(cTemp[0],"************************************************************************************************************************************")!=0){
+                    getline(fin,line);
+                    std::istringstream iss3(line);
+                    for(Int_t i=0; i<columns; i++){
+                      iss3 >> cTemp[i];
+                      //printf("%s ", cTemp[i]);
+                    }
+
+                    stateEnergy[0]=0.0; // index 0 is elasitc
+
+
+                    if((strcmp(cTemp[1],"J=")==0) && (strcmp(cTemp[4],"E=")==0)){
+                      stateEnergy[atoi(cTemp[0])] = atof(cTemp[5]); 
+                      printf("Found state %d with energy %f\n", atoi(cTemp[0]), stateEnergy[atoi(cTemp[0])]);
+                    }
+
+
+                    counter++;
+                    if(counter>stopper){
+                      cout << "Reached maximum number of lines (" << counter << " > " << stopper << ")" << endl;
+                      break;
+                    }
+                  }
+
+
+                } // end of number of states and energies
 		
 		//if((strcmp(cTemp[0],"CROSS")==0) && (strcmp(cTemp[1],"SECTIONS")==0) && (strcmp(cTemp[2],"FOR")==0) && (strcmp(cTemp[3],"OUTGOING")==0) && (strcmp(cTemp[4],"96Sr")==0) && (strcmp(cTemp[6],"p")==0) && (strcmp(cTemp[8],"state")==0) && (strcmp(cTemp[10],"1")==0)){
 		//if((strcmp(cTemp[0],"CROSS")==0) && (strcmp(cTemp[1],"SECTIONS")==0) && (strcmp(cTemp[2],"FOR")==0) && (strcmp(cTemp[3],"OUTGOING")==0) && (strcmp(cTemp[4],"96Sr")==0) && (strcmp(cTemp[6],"p")==0) && (strcmp(cTemp[8],"state")==0) && (strcmp(cTemp[10],"2")==0)){
-		if((strcmp(cTemp[0],"CROSS")==0) && (strcmp(cTemp[1],"SECTIONS")==0) && (strcmp(cTemp[2],"FOR")==0) && (strcmp(cTemp[3],"OUTGOING")==0) && (strcmp(cTemp[4],"13C")==0) && (strcmp(cTemp[6],"207Pb")==0) && (strcmp(cTemp[8],"state")==0) && (strcmp(cTemp[10],"1")==0)){
-			
-                        if(verbose){
-                          cout << "Found 96Sr (d,p)" << endl;
+		//if((strcmp(cTemp[0],"CROSS")==0) && (strcmp(cTemp[1],"SECTIONS")==0) && (strcmp(cTemp[2],"FOR")==0) && (strcmp(cTemp[3],"OUTGOING")==0) && (strcmp(cTemp[4],"13C")==0) && (strcmp(cTemp[6],"207Pb")==0) && (strcmp(cTemp[8],"state")==0) && (strcmp(cTemp[10],"1")==0)){
+		if((strcmp(cTemp[0],"CROSS")==0) && (strcmp(cTemp[1],"SECTIONS")==0) && (strcmp(cTemp[2],"FOR")==0) && (strcmp(cTemp[3],"OUTGOING")==0 )){
+                        
+                        entry = 0;
+		        
+                        Int_t index=-1;
+                        
+                        if((strcmp(cTemp[4],proj)==0) && (strcmp(cTemp[6],targ)==0) && (strcmp(cTemp[8],"state")==0) && (strcmp(cTemp[10],"1")==0)){
+                          index = 0; // elastic
                         }
+                        if((strcmp(cTemp[4],ejec)==0) && (strcmp(cTemp[6],reco)==0) && (strcmp(cTemp[8],"state")==0) ){
+                          index = atoi(cTemp[10]);
+                        }
+                        
 			
 			//the next line is not of interest
 			getline(fin,line);
@@ -141,10 +231,10 @@ TH1F* FrescoPlotter::CreateHistogram(){
 				}
 				
                                 if(strcmp(cTemp[1],"deg.:")==0){
-                                  angle[entry] = atof(cTemp[0]);
-                                  crossSection[entry] = atof(cTemp[4]);
+                                  angle[index][entry] = atof(cTemp[0]);
+                                  crossSection[index][entry] = atof(cTemp[4]);
                                   if(verbose){
-                                    cout << "Extracted: entry number " << entry << ", angle " << angle[entry] << ", cross section " << crossSection[entry] << endl;
+                                    cout << "Extracted: entry number " << entry << ", angle " << angle[index][entry] << ", cross section " << crossSection[index][entry] << endl;
                                   }
                                   entry++;
                                 }
@@ -167,7 +257,7 @@ TH1F* FrescoPlotter::CreateHistogram(){
 			break;
 		}
 		
-		
+
 	} //end of reading input file
 	
 	fin.close();
@@ -180,14 +270,26 @@ TH1F* FrescoPlotter::CreateHistogram(){
 	
 	cout << "Creating Histograms for cross sections" << endl;
 
-        Float_t deg2rad = TMath::Pi()/180.0;
-        Float_t min = angle[0]*deg2rad;
-        Float_t max = (angle[entry-1]+(angle[entry-1]-angle[0])/entry)*deg2rad;
+        Float_t min = angle[0][0]*deg2rad;
+        Float_t max = (angle[0][entry-1]+(angle[0][entry-1]-angle[0][0])/entry)*deg2rad;
 	
-        TH1F *histCS=new TH1F("CS","Cross Sections", entry, min, max);
+        TH1F *histCSelast = new TH1F("CSelast","Cross Sections, elastic scattering", entry, min, max);
         for(Int_t e=0; e<entry; e++){
-          histCS->SetBinContent(e+1,crossSection[e]);
+          histCSelast->SetBinContent(e+1,crossSection[0][e]);
         }
+
+
+        TH1F *histCS[maxNumberOfStates];
+        for(Int_t s=1; s<maxNumberOfStates+1; s++){
+          sprintf(cTemp[0], "CSstate%02d", s);
+          sprintf(cTemp[1], "Cross Sections, transfer to state %d", s);
+          histCS[s-1]=new TH1F(cTemp[0] ,cTemp[1] , entry, min, max);
+
+          for(Int_t e=0; e<entry; e++){
+            histCS[s-1]->SetBinContent(e+1,crossSection[s][e]);
+          }
+        }
+        
 //	histCS->Write("histCS");
 	
 //	histCS->Draw();
@@ -195,12 +297,8 @@ TH1F* FrescoPlotter::CreateHistogram(){
 //	outfile->Close();
 	
 	
-	
-	
-	
-	
-	
-	return histCS;
+	return histCS[0];
+
 }
 
 
