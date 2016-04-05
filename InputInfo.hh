@@ -29,6 +29,8 @@ class InputInfo
         //Float_t fMaxExEnergy;
         Float_t fStateEnergy[maxNumberOfStates+1]; // index 0 is elastic
 	Float_t fBeamEnergy;
+        Float_t fAngleMin, fAngleMax; // minimum and maximum angle in CM
+        Float_t fElasticDownscale;
 
         // event generator related
         Bool_t HaveOedoSimFileName(){return fHaveOedoSimFileName;};
@@ -38,6 +40,7 @@ class InputInfo
         Bool_t ProfileBeamY(){return fProfileY;};
         Bool_t ProfileBeamA(){return fProfileA;};
         Bool_t ProfileBeamB(){return fProfileB;};
+        Bool_t IncludeElastic(){return fIncludeElastic;}
 	
         //analysis related
         Float_t fResTargetX, fResTargetY, fResTargetZ; // should be obtained from beam tracking detector(s)
@@ -61,7 +64,8 @@ class InputInfo
         
         Bool_t fHaveOedoSimFileName; 
         Bool_t fHaveFrescoFileName;
-        Bool_t fProfileE, fProfileX, fProfileY, fProfileA, fProfileB; 
+        Bool_t fProfileE, fProfileX, fProfileY, fProfileA, fProfileB;
+        Bool_t fIncludeElastic; 
         	
 	
 };

@@ -20,6 +20,11 @@ InputInfo::InputInfo(){
         }
 	fBeamEnergy=10.0; // in MeV/u
 
+        fAngleMin=0.0;
+        fAngleMax=TMath::Pi();
+        fElasticDownscale=0.0;
+        fIncludeElastic=false;
+
         fHaveOedoSimFileName=false;
         
         fProfileE=false;	
@@ -182,6 +187,17 @@ void InputInfo::parse(char filename[100]){
                 //        fMaxExEnergy=atof(temp[1]);
                 //        cout << "Highest excitation energy in heavy ejectile is set to " << fMaxExEnergy << " MeV" << endl;
                 //}
+                else if(strcmp(temp[0],"theta_range_CM")==0){
+                  fAngleMin=atof(temp[1])/180.0*TMath::Pi();
+                  fAngleMax=atof(temp[2])/180.0*TMath::Pi();
+                  cout << "Theta angles of recoiled particles in CM will be generated in the range from " << fAngleMin << " rad to " << fAngleMax << " rad." << endl;
+                }
+                else if(strcmp(temp[0],"include_elastic_downscaled")==0){
+                  fElasticDownscale = TMath::Power(10.0, atof(temp[1]));
+                  fIncludeElastic=true;
+                  cout << "Elastic scattering will be included with a downscaling factor of " << fElasticDownscale << endl;
+
+                }
 		else if(strcmp(temp[0],"beam_energy")==0){
 			fBeamEnergy=atof(temp[1]);
 			cout << "Beam energy is set to '" << fBeamEnergy << "' MeV/u" << endl;

@@ -56,16 +56,18 @@ Int_t main(Int_t argc, char **argv){
   //Float_t maxExEnergy=info->fMaxExEnergy;
   Float_t stateEnergy[maxNumberOfStates+1]={0.0}; // index 0 is elastic
   
+  
   // for binning of histograms
   Int_t binN;
   Double_t binL, binU;
   TH1F* histCScmFresco[maxNumberOfStates+1];
+  TH1F* histCSstates; 
   
   if(info->HaveFrescoFileName()){
     FrescoPlotter* frescoPlotter = new FrescoPlotter(info);
      
     frescoPlotter->CreateHistograms();
-    frescoPlotter->UpdateInput();
+    frescoPlotter->UpdateInput(); // overwrite levels in InputInfo with data from fresco file
     
     //TH1F* histCScmFresco = frescoPlotter->GetHistogramState(1); // todo: remove this one!!
 
@@ -74,19 +76,33 @@ Int_t main(Int_t argc, char **argv){
 
     numberOfStates=frescoPlotter->GetNumberOfStates();
 
+    histCSstates = new TH1F("histCSstates", "Integrated cross sections vs. state", numberOfStates+1, 0, numberOfStates+1);
+    
     for(Int_t h=0; h<numberOfStates+1; h++){
       histCScmFresco[h] = frescoPlotter->GetHistogramState(h);
+
+      Int_t bin1=histCScmFresco[h]->FindBin(info->fAngleMin);
+      Int_t bin2=histCScmFresco[h]->FindBin(info->fAngleMax);
+
+      if((info->IncludeElastic() && h==0) ){
+        histCSstates->SetBinContent(h+1, (histCScmFresco[h]->Integral(bin1, bin2))/info->fElasticDownscale);
+        //printf("Histogram %d: integral from %f (bin %d) to %f (bin%d) is %f\n", h, info->fAngleMin, bin1, info->fAngleMax, bin2, histCScmFresco[h]->Integral(bin1, bin2));
+      }else if(h>0){
+        histCSstates->SetBinContent(h+1, histCScmFresco[h]->Integral(bin1, bin2));
+      }
     }
 
 
     //TCanvas* canCS = new TCanvas();
-    //canCS->Divide(4,3);
-    ////canCS->cd(1);
-    ////histCScmFrescoElast->Draw();
-    //for(Int_t h=0; h<numberOfStates+1; h++){
-    //  canCS->cd(h+1);
-    //  histCScmFresco[h]->Draw();
-    //}
+    //canCS->cd();
+    //histCSstates->Draw();
+    ////canCS->Divide(4,3);
+    //////canCS->cd(1);
+    //////histCScmFrescoElast->Draw();
+    ////for(Int_t h=0; h<numberOfStates+1; h++){
+    ////  canCS->cd(h+1);
+    ////  histCScmFresco[h]->Draw();
+    ////}
 
     //theApp->Run();
 
@@ -103,7 +119,7 @@ Int_t main(Int_t argc, char **argv){
     binL = 0.0;
     binU = TMath::Pi();
   }
-
+  
 
   TH1F* histCScm = new TH1F("histCScm","", binN, binL, binU);
   TH1F* histCSlab = new TH1F("histCSlab","", binN, binL, binU);
@@ -117,6 +133,31 @@ Int_t main(Int_t argc, char **argv){
   TH1F* histCSlabDeg = new TH1F("histCSlabDeg","", binN, binL, binU);
   TH2F* histCSlabVScmDeg = new TH2F("histCSlabVScmDeg", "", binN, binL, binU, binN, binL, binU);
 
+
+  
+  //const Int_t maxNumberOfStates=5; // defined in FrescoPlotter.hh
+  if(numberOfStates>maxNumberOfStates){
+    cout << "Error: maximum number of states is " << maxNumberOfStates << "! You requested " << numberOfStates << endl;
+    abort();
+  }
+
+  printf("Set:\n");
+  //if(numberOfStates>1){
+    for(Int_t s=0; s<numberOfStates+1; s++){
+      //stateEnergy[s]=(Float_t)s * maxExEnergy / (Float_t)(numberOfStates-1); // todo: get it from frescoplotter
+      stateEnergy[s]=info->fStateEnergy[s];
+      printf("  state %d, energy %f\n", s, stateEnergy[s]);
+
+      //if(!(info->ProfileBeamE()) && stateEnergy[s]>beamE){
+      //  cout << "Warning: state energy is larger than beam energy! This might buggy!" << endl;
+      //  //return 0;
+      //}
+
+    }
+  //}else{
+    // stateEnergy[0] is already 0
+  //}
+  
 
   
   Float_t beamE=info->fBeamEnergy;    // in MeV/u
@@ -138,36 +179,13 @@ Int_t main(Int_t argc, char **argv){
   Int_t lightA=info->fLightA;
   Int_t lightZ=info->fLightZ;
   
-  //const Int_t maxNumberOfStates=5; // defined in FrescoPlotter.hh
-  if(numberOfStates>maxNumberOfStates){
-    cout << "Error: maximum number of states is " << maxNumberOfStates << "! You requested " << numberOfStates << endl;
-    return 0;
-  }
-
-  printf("Set:\n");
-  if(numberOfStates>1){
-    for(Int_t s=0; s<numberOfStates+1; s++){
-      //stateEnergy[s]=(Float_t)s * maxExEnergy / (Float_t)(numberOfStates-1); // todo: get it from frescoplotter
-      stateEnergy[s]=info->fStateEnergy[s];
-      printf("  state %d, energy %f\n", s, stateEnergy[s]);
-
-      if(!(info->ProfileBeamE()) && stateEnergy[s]>beamE){
-        cout << "Warning: state energy is larger than beam energy! This might buggy!" << endl;
-        //return 0;
-      }
-
-    }
-  }else{
-    // stateEnergy[0] is already 0
-  }
-  
   Float_t projMass=0.0, targetMass=0.0, lightMass=0.0, heavyMass=0.0, qValue=0.0; 
   
   if(targetZ!=lightZ){
     cout << "Dev Info: only neutron transfer is implemented so far!" << endl;
     cout << "Target Z and light ejectile Z are not the same (" << targetZ << " and " << lightZ << ", resp.)!" << endl;
     cout << "Choose another reaction channel!" << endl;
-    return 0;
+    abort();
   }
   
   char* massFile = (char*)"/home/philipp/programme/makeEvents/mass.dat";
@@ -194,9 +212,12 @@ Int_t main(Int_t argc, char **argv){
   heavyMass=ejec->GetMass();
   
   Kinematics* reaction[maxNumberOfStates+1];
+  //reaction[0] = new Kinematics(proj, targ, targ, proj, beamE*projA, stateEnergy[0]); // elastic scattering
   reaction[0] = new Kinematics(proj, targ, targ, proj, beamE*projA, stateEnergy[0]); // elastic scattering
+  //printf("state energy %d: %f\n", 0, stateEnergy[0]);
   for(Int_t s=1; s<numberOfStates+1; s++){
-     reaction[s] = new Kinematics(proj, targ, reco, ejec, beamE*projA, stateEnergy[s]);
+      reaction[s] = new Kinematics(proj, targ, reco, ejec, beamE*projA, stateEnergy[s]);
+      //printf("state energy %d: %f\n", s, stateEnergy[s]);
   }
 
   qValue=reaction[1]->GetQValue();
@@ -204,7 +225,6 @@ Int_t main(Int_t argc, char **argv){
    
   printf("Nuclear masses: projectile %6.10f, target %6.10f, light ejectile %6.10f, heavy ejectile %6.10f; Q-value %f\n", projMass, targetMass, lightMass, heavyMass, qValue); 
   
-   
 
   // make some cross checks of the inputs
   if(!(info->HaveOedoSimFileName()) && 
@@ -300,7 +320,7 @@ Int_t main(Int_t argc, char **argv){
   Int_t eventNumber=0;
 
   Int_t state=0; // aux, which state is populated
-  Float_t excEn=0.0, missMass=0.0;
+  Float_t excEn=0.0, missMass=0.0; // for cross checks with analysis code
 
   TTree *events = new TTree();
   events->Branch("eventNumber", &eventNumber, "eventNumber/I");
@@ -433,19 +453,34 @@ Int_t main(Int_t argc, char **argv){
     
     // choose the state populated
     // todo: they should be chosen from total cross section for each populated state
-    state=(Int_t)randomizer->Uniform(maxState);
 
 // ignore elastic scattering for bug fixing ...
-//state=(Int_t)(randomizer->Uniform(maxState-1))+1;
+    if(info->IncludeElastic()){
+      state=(Int_t)randomizer->Uniform(maxState);
+    }else{
+      state=(Int_t)(randomizer->Uniform(maxState-1))+1;
+    }
 
     
     if(info->HaveFrescoFileName()){
       // take theta distribution from fresco output
       // todo: beam energy profile needs to be taken into account!
-      lightTheta=histCScmFresco[state]->GetRandom();
+      //lightTheta=histCScmFresco[state]->GetRandom();
+      lightTheta=-1.0;
+
+      Int_t counter=0;
+      while((lightTheta<info->fAngleMin) || (lightTheta>info->fAngleMax)){
+        lightTheta=histCScmFresco[state]->GetRandom();
+        counter++;
+        if(counter>10000){
+          printf("Error in while loop! More than 10k tries! Please check!\n");
+          abort();
+        }
+      }
     }else{
       // uniform in CM system
-      lightTheta=randomizer->Uniform(TMath::Pi());
+      //lightTheta=randomizer->Uniform(TMath::Pi());
+      lightTheta=randomizer->Uniform(info->fAngleMin, info->fAngleMax);
     }
     
     lightThetaCM = lightTheta; 
@@ -468,16 +503,35 @@ Int_t main(Int_t argc, char **argv){
     }else{
       reactionTemp = reaction[state];
     }
-      
-    lightTheta = reactionTemp->Angle_cm2lab(-reactionTemp->GetVcm(2), lightTheta); // conversion from cm to lab
+    
+    if(state==0){ 
+      lightTheta = reactionTemp->Angle_cm2lab(reactionTemp->GetVcm(2), lightTheta); // conversion from cm to lab
+    }else{
+      lightTheta = reactionTemp->Angle_cm2lab(-reactionTemp->GetVcm(2), lightTheta); // conversion from cm to lab
+    }
         
     lightEnergy=reactionTemp->ELab(lightTheta,2);
 
-      //delete reactionTemp;
+    //printf("CM to Lab conversion (state %d): thetaCM = %f, thetaLab = %f,Vcm = %f, betaCM = %f\n", state, lightThetaCM, lightTheta, reaction[state]->GetVcm(2), reaction[state]->GetBetacm());
 
-
+    Int_t a, z;
+    if(state==0){ // elastic scattering
+      lightMass=targetMass;
+      heavyMass=projMass;
+      qValue=0.0;
+      a=targetA;
+      z=targetZ;
+    }else{
+      lightMass=reco->GetMass();
+      heavyMass=ejec->GetMass();
+      qValue=reaction[1]->GetQValue();
+      a=lightA;
+      z=lightZ;
+    }
     
-    //printf("CM to Lab conversion: thetaCM = %f, thetaLab = %f,Vcm = %f, betaCM = %f\n", lightThetaCM, lightTheta, reaction[st]->GetVcm(2), reaction[st]->GetBetacm());
+    char lightPdgIdName[20];
+    sprintf(lightPdgIdName,"1000%02d%03d0", z, a);
+    lightPdgId=atoi(lightPdgIdName);
 
 
 
@@ -510,11 +564,11 @@ Int_t main(Int_t argc, char **argv){
     }
     excEn = reactionTemp->GetExcEnergy(rec)/1000.0; // MeV
     
+    //if(state==0){
+    //  printf("state %d: theta %f, energy %f, mass %f, rec.rho %f,  ex en %f\n", state, lightTheta, lightEnergy, lightMass, rec.Rho(), excEn);
+    //}
+
     //delete reactionTemp;
-
-    //printf("Light theta cm %f,  lab %f, Vcm %f, energy %f\n", lightThetaCM, lightTheta, reaction[s]->GetVcm(2), lightEnergy);
-
-    
 
 
     TVector3 direction(0.0, 0.0, -1.0);
@@ -559,27 +613,14 @@ Int_t main(Int_t argc, char **argv){
     lightL.SetVect(lightV);
     lightL.SetE(lightEnergy+lightMass);
 
-    //printf("light px %f, py %f, pz %f, e %f (lab)\n", lightL.Px(), lightL.Py(), lightL.Pz(), lightL.E());
-    
     lightL.Boost(-cmV);
-
-    //printf("light px %f, py %f, pz %f, e %f (cm)\n", lightL.Px(), lightL.Py(), lightL.Pz(), lightL.E());
 
 
     TLorentzVector heavyL;
     heavyL.SetVect(-lightL.Vect());
     heavyL.SetE(cmEnergy - lightL.E());
 
-    //printf("heavy px %f, py %f, pz %f, e %f (cm), mag %f, mass %f, exc en %f\n", heavyL.Px(), heavyL.Py(), heavyL.Pz(), heavyL.E(), heavyL.M(), heavyMass, heavyL.M()-heavyMass);
-
-    //heavyL.Boost(cmV);
-
     missMass = -heavyL.M()+heavyMass;
-
-    //printf("heavy px %f, py %f, pz %f, e %f (lab), mag %f, mass %f, exc en %f\n", heavyL.Px(), heavyL.Py(), heavyL.Pz(), heavyL.E(), heavyL.M(), heavyMass, heavyL.M()-heavyMass);
-
-    //printf("\n");
-
 
 
     events->Fill();
