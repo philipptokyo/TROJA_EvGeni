@@ -61,6 +61,7 @@ Int_t main(Int_t argc, char **argv){
   Int_t binN;
   Double_t binL, binU;
   TH1F* histCScmFresco[maxNumberOfStates+1];
+  TH1F* histCScmFrescoCut[maxNumberOfStates+1];
   TH1F* histCSstates; 
   
   if(info->HaveFrescoFileName()){
@@ -77,18 +78,34 @@ Int_t main(Int_t argc, char **argv){
     numberOfStates=frescoPlotter->GetNumberOfStates();
 
     histCSstates = new TH1F("histCSstates", "Integrated cross sections vs. state", numberOfStates+1, 0, numberOfStates+1);
+   
+    // get the first histogram and determine binning
+    histCScmFresco[0] = frescoPlotter->GetHistogramState(0);
+    binN = histCScmFresco[0]->GetXaxis()->GetNbins();
+    binL = histCScmFresco[0]->GetXaxis()->GetBinLowEdge(0);
+    binU = histCScmFresco[0]->GetXaxis()->GetBinUpEdge(binN);
+
+    Int_t binF=histCScmFresco[0]->FindBin(info->fAngleMin); // cut from bin
+    Int_t binT=histCScmFresco[0]->FindBin(info->fAngleMax); // cut to bin
     
     for(Int_t h=0; h<numberOfStates+1; h++){
-      histCScmFresco[h] = frescoPlotter->GetHistogramState(h);
+      if(h>0){
+        histCScmFresco[h] = frescoPlotter->GetHistogramState(h);
+      }
+      histCScmFrescoCut[h] = frescoPlotter->GetHistogramState(h);
 
-      Int_t bin1=histCScmFresco[h]->FindBin(info->fAngleMin);
-      Int_t bin2=histCScmFresco[h]->FindBin(info->fAngleMax);
+      for(Int_t b=0; b<binN; b++){
+        if(b<binF || b>=binT){
+          histCScmFrescoCut[h]->SetBinContent(b, 0.0);
+        }
+      }
+
 
       if((info->IncludeElastic() && h==0) ){
-        histCSstates->SetBinContent(h+1, (histCScmFresco[h]->Integral(bin1, bin2))/info->fElasticDownscale);
+        histCSstates->SetBinContent(h+1, (histCScmFresco[h]->Integral(binF, binT))/info->fElasticDownscale);
         //printf("Histogram %d: integral from %f (bin %d) to %f (bin%d) is %f\n", h, info->fAngleMin, bin1, info->fAngleMax, bin2, histCScmFresco[h]->Integral(bin1, bin2));
       }else if(h>0){
-        histCSstates->SetBinContent(h+1, histCScmFresco[h]->Integral(bin1, bin2));
+        histCSstates->SetBinContent(h+1, histCScmFresco[h]->Integral(binF, binT));
       }
     }
 
@@ -110,10 +127,6 @@ Int_t main(Int_t argc, char **argv){
     //histCScmFresco->Draw();
     //theApp->Run();
 
-    // determine binning
-    binN = histCScmFresco[0]->GetXaxis()->GetNbins();
-    binL = histCScmFresco[0]->GetXaxis()->GetBinLowEdge(0);
-    binU = histCScmFresco[0]->GetXaxis()->GetBinUpEdge(binN);
   }else{ // no fresco file
     binN = 180;
     binL = 0.0;
@@ -452,9 +465,8 @@ Int_t main(Int_t argc, char **argv){
     
     
     // choose the state populated
-    // todo: they should be chosen from total cross section for each populated state
+    // they are chosen from total cross section for each populated state
 
-// ignore elastic scattering for bug fixing ...
     if(info->IncludeElastic()){
       state=(Int_t)randomizer->Uniform(maxState);
     }else{
@@ -466,24 +478,25 @@ Int_t main(Int_t argc, char **argv){
       // take theta distribution from fresco output
       // todo: beam energy profile needs to be taken into account!
       //lightTheta=histCScmFresco[state]->GetRandom();
-      lightTheta=-1.0;
+      //lightTheta=-1.0;
 
-      Int_t counter=0;
-      while((lightTheta<info->fAngleMin) || (lightTheta>info->fAngleMax)){
-        lightTheta=histCScmFresco[state]->GetRandom();
-        counter++;
-        if(counter>10000){
-          printf("Error in while loop! More than 10k tries! Please check!\n");
-          abort();
-        }
-      }
+      //Int_t counter=0;
+      //while((lightTheta<info->fAngleMin) || (lightTheta>info->fAngleMax)){
+      //  lightTheta=histCScmFrescoCut[state]->GetRandom();
+      //  counter++;
+      //  if(counter>10000){
+      //    printf("Error in while loop for obtaining theta! More than 10k tries! Please check!\n");
+      //    abort();
+      //  }
+      //}
+      lightTheta=histCScmFrescoCut[state]->GetRandom();
     }else{
       // uniform in CM system
       //lightTheta=randomizer->Uniform(TMath::Pi());
       lightTheta=randomizer->Uniform(info->fAngleMin, info->fAngleMax);
     }
     
-    lightThetaCM = lightTheta; 
+    lightThetaCM = lightTheta; // keep it for the root tree 
 
 
     // phi uniform
@@ -504,10 +517,18 @@ Int_t main(Int_t argc, char **argv){
       reactionTemp = reaction[state];
     }
     
-    if(state==0){ 
-      lightTheta = reactionTemp->Angle_cm2lab(reactionTemp->GetVcm(2), lightTheta); // conversion from cm to lab
+    // fresco theta distribution is in CM
+    // -> boost to lab
+    // else, uniform distribution in lab system
+    if(info->HaveFrescoFileName()){    
+      if(state==0){ 
+        lightTheta = reactionTemp->Angle_cm2lab(reactionTemp->GetVcm(2), lightTheta); // conversion from cm to lab
+      }else{
+        lightTheta = reactionTemp->Angle_cm2lab(-reactionTemp->GetVcm(2), lightTheta); // conversion from cm to lab
+      }
     }else{
-      lightTheta = reactionTemp->Angle_cm2lab(-reactionTemp->GetVcm(2), lightTheta); // conversion from cm to lab
+      // boost isotropic lab distribution to CM
+      lightThetaCM = reactionTemp->Angle_lab2cm(reactionTemp->GetVcm(2), lightTheta);
     }
         
     lightEnergy=reactionTemp->ELab(lightTheta,2);
@@ -640,6 +661,7 @@ Int_t main(Int_t argc, char **argv){
   if(info->HaveFrescoFileName()){
     for(Int_t s=0; s<numberOfStates+1; s++){
       histCScmFresco[s]->Write(Form("histCScmFresco_%02d", s));
+      histCScmFrescoCut[s]->Write(Form("histCScmFrescoCut_%02d", s));
     }
   }
   histCScm->Write("histCScm");
