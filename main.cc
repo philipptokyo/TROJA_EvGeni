@@ -92,7 +92,8 @@ Int_t main(Int_t argc, char **argv){
       if(h>0){
         histCScmFresco[h] = frescoPlotter->GetHistogramState(h);
       }
-      histCScmFrescoCut[h] = frescoPlotter->GetHistogramState(h);
+      //histCScmFrescoCut[h] = frescoPlotter->GetHistogramState(h);
+      histCScmFrescoCut[h] = (TH1F*)histCScmFresco[h]->Clone();
 
       for(Int_t b=0; b<binN; b++){
         if(b<binF || b>=binT){
@@ -102,10 +103,12 @@ Int_t main(Int_t argc, char **argv){
 
 
       if((info->IncludeElastic() && h==0) ){
-        histCSstates->SetBinContent(h+1, (histCScmFresco[h]->Integral(binF, binT))/info->fElasticDownscale);
+        //histCSstates->SetBinContent(h+1, (histCScmFresco[h]->Integral(binF, binT))/info->fElasticDownscale);
+        histCSstates->SetBinContent(h+1, (histCScmFresco[h]->Integral(0, binN))/info->fElasticDownscale);
         //printf("Histogram %d: integral from %f (bin %d) to %f (bin%d) is %f\n", h, info->fAngleMin, bin1, info->fAngleMax, bin2, histCScmFresco[h]->Integral(bin1, bin2));
       }else if(h>0){
-        histCSstates->SetBinContent(h+1, histCScmFresco[h]->Integral(binF, binT));
+        //histCSstates->SetBinContent(h+1, histCScmFresco[h]->Integral(binF, binT));
+        histCSstates->SetBinContent(h+1, histCScmFresco[h]->Integral(0, binN));
       }
     }
 
@@ -466,15 +469,12 @@ Int_t main(Int_t argc, char **argv){
     
     // choose the state populated
     // they are chosen from total cross section for each populated state
-
-    if(info->IncludeElastic()){
-      state=(Int_t)randomizer->Uniform(maxState);
-    }else{
-      state=(Int_t)(randomizer->Uniform(maxState-1))+1;
-    }
-
     
     if(info->HaveFrescoFileName()){
+
+      state=(Int_t)histCSstates->GetRandom();
+
+
       // take theta distribution from fresco output
       // todo: beam energy profile needs to be taken into account!
       //lightTheta=histCScmFresco[state]->GetRandom();
@@ -491,6 +491,13 @@ Int_t main(Int_t argc, char **argv){
       //}
       lightTheta=histCScmFrescoCut[state]->GetRandom();
     }else{
+
+      if(info->IncludeElastic()){
+        state=(Int_t)randomizer->Uniform(maxState);
+      }else{
+        state=(Int_t)(randomizer->Uniform(maxState-1))+1;
+      }
+
       // uniform in CM system
       //lightTheta=randomizer->Uniform(TMath::Pi());
       lightTheta=randomizer->Uniform(info->fAngleMin, info->fAngleMax);
@@ -659,6 +666,7 @@ Int_t main(Int_t argc, char **argv){
 
   events->Write("events");
   if(info->HaveFrescoFileName()){
+    histCSstates->Write("histCSstates");
     for(Int_t s=0; s<numberOfStates+1; s++){
       histCScmFresco[s]->Write(Form("histCScmFresco_%02d", s));
       histCScmFrescoCut[s]->Write(Form("histCScmFrescoCut_%02d", s));
