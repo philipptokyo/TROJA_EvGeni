@@ -365,9 +365,9 @@ Int_t main(Int_t argc, char **argv){
   // determine PDG ID of light ejectile
   // todo: if the light ejectile is not the same for each event,
   //       than this part needs to be moved to the event loop
-  char lightPdgIdName[20];
-  sprintf(lightPdgIdName,"1000%02d%03d0",lightZ,lightA);
-  lightPdgId=atoi(lightPdgIdName);
+//  char lightPdgIdName[20];
+//  sprintf(lightPdgIdName,"1000%02d%03d0",lightZ,lightA);
+//  lightPdgId=atoi(lightPdgIdName);
   //printf("Outgoing PDG ID: char %s, int %i\n", tmp, lightPdgId);
   
   
@@ -557,6 +557,9 @@ Int_t main(Int_t argc, char **argv){
       z=lightZ;
     }
     
+    // write the correct PDG ID
+    //if(a==1 && z==1){ //proton 
+    //  lightPdgId=
     char lightPdgIdName[20];
     sprintf(lightPdgIdName,"1000%02d%03d0", z, a);
     lightPdgId=atoi(lightPdgIdName);
@@ -575,7 +578,7 @@ Int_t main(Int_t argc, char **argv){
 
 
 // constant kinetic energy for testing reasons
-//lightEnergy=beamE;
+lightEnergy=beamE;
 
     //printf("  ELab is %f\n", lightEnergy);
 
