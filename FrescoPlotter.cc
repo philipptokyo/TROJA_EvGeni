@@ -79,7 +79,7 @@ void FrescoPlotter::CreateHistograms(){
 	
 	//variables for writing to root file
 	
-	const ULong64_t stopper=10000; //
+	const ULong64_t stopper=100000; //
 	
 	if(verbose){cout << "Stopping after " << stopper << " lines." << endl;}
 	
@@ -139,9 +139,15 @@ void FrescoPlotter::CreateHistograms(){
                   fProjA = atoi(fProj);
                   fEjecA = atoi(fEjec);
 
-                  fBeamEnergy = atof(cTemp[5]);
-                  printf("Beam energy is %f MeV/u, %f MeV \n", fBeamEnergy, fBeamEnergy*fProjA);
+                  //fBeamEnergy = atof(cTemp[5]);
+                  //printf("Beam energy is %f MeV/u, %f MeV \n", fBeamEnergy, fBeamEnergy*fProjA);
 
+                }
+
+                // get the beam energy given in the fresco input file
+                if( (strcmp(cTemp[0],"INCOMING")==0) && (strcmp(cTemp[1],fProj)==0) && (strcmp(cTemp[2],";")==0) && (strcmp(cTemp[3],"LABORATORY")==0) && (strcmp(cTemp[4],fProj)==0) && (strcmp(cTemp[5],"ENERGY")==0) ){
+                  fBeamEnergy = atof(cTemp[7])/fProjA;
+                  printf("Beam energy is %f MeV/u, %f MeV \n", fBeamEnergy, fBeamEnergy*fProjA);
                 }
 
                 // get number of states and their energies in outgoing channel
@@ -321,8 +327,10 @@ void FrescoPlotter::UpdateInput(){
   printf("Info: FrescoPlotter overwrites the excited states given in input textfile!\n");
 
   fInfo->fNumberOfStates = fNumberOfStates;
-  for(Int_t s=0; s<fNumberOfStates; s++){
-    fInfo->fStateEnergy[s] = fStateEnergy[s+1];
+//  for(Int_t s=0; s<fNumberOfStates; s++){   // is this wrong?
+//    fInfo->fStateEnergy[s] = fStateEnergy[s+1]; // is this wrong?
+  for(Int_t s=0; s<fNumberOfStates+1; s++){
+    fInfo->fStateEnergy[s] = fStateEnergy[s];
   }
 
   fInfo->fBeamEnergy = fBeamEnergy;
