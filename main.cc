@@ -578,7 +578,7 @@ Int_t main(Int_t argc, char **argv){
 
 
 // constant kinetic energy for testing reasons
-lightEnergy=beamE;
+//lightEnergy=beamE;
 
     //printf("  ELab is %f\n", lightEnergy);
 
