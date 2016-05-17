@@ -438,13 +438,13 @@ Int_t main(Int_t argc, char **argv){
     TVector3 vBeam(0.0, 0.0, 1.0);
     
     if(info->ProfileBeamA()){
-      vBeam.RotateY(beamA/1000.0);
+      vBeam.RotateY(beamA/1000.0); // rotate in rad
     }else{
       beamA=0.0;
     }
 
     if(info->ProfileBeamB()){
-      vBeam.RotateX(beamB/1000.0);
+      vBeam.RotateX(beamB/1000.0); // rotate in rad
     }else{
       beamB=0.0;
     }
