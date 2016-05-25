@@ -135,6 +135,10 @@ Int_t main(Int_t argc, char **argv){
     binL = 0.0;
     binU = TMath::Pi();
   }
+
+  if(info->FrescoHeaderOnly()){
+    info->UnsetFrescoFileName();
+  }
   
 
   TH1F* histCScm = new TH1F("histCScm","", binN, binL, binU);

@@ -35,11 +35,14 @@ class InputInfo
         // event generator related
         Bool_t HaveOedoSimFileName(){return fHaveOedoSimFileName;};
         Bool_t HaveFrescoFileName(){return fHaveFrescoFileName;};
+        void UnsetFrescoFileName(){fHaveFrescoFileName=false;};
+        Bool_t FrescoHeaderOnly(){return fFrescoHeaderOnly;};
         Bool_t ProfileBeamE(){return fProfileE;};
         Bool_t ProfileBeamX(){return fProfileX;};
         Bool_t ProfileBeamY(){return fProfileY;};
         Bool_t ProfileBeamA(){return fProfileA;};
         Bool_t ProfileBeamB(){return fProfileB;};
+        Bool_t NoBeamTracking(){return fNoBeamTracking;};
         Bool_t IncludeElastic(){return fIncludeElastic;}
 	
         //analysis related
@@ -64,7 +67,9 @@ class InputInfo
         
         Bool_t fHaveOedoSimFileName; 
         Bool_t fHaveFrescoFileName;
+        Bool_t fFrescoHeaderOnly;
         Bool_t fProfileE, fProfileX, fProfileY, fProfileA, fProfileB;
+        Bool_t fNoBeamTracking;
         Bool_t fIncludeElastic; 
         	
 	

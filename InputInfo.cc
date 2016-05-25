@@ -26,12 +26,15 @@ InputInfo::InputInfo(){
         fIncludeElastic=false;
 
         fHaveOedoSimFileName=false;
+        fHaveFrescoFileName=false;
+        fFrescoHeaderOnly=false;
         
         fProfileE=false;	
         fProfileX=false;	
         fProfileY=false;	
         fProfileA=false;	
-        fProfileB=false;	
+        fProfileB=false;
+        fNoBeamTracking=false;	
 
         fResTargetX=0.0;
         fResTargetY=0.0;  
@@ -118,6 +121,10 @@ void InputInfo::parse(char filename[100]){
 			strcpy(fOutFileNameFresco,temp[1]);
                         fHaveFrescoFileName = true;
 			cout << "Output file of fresco is '" << fOutFileNameFresco << "'" << endl;
+		}
+		else if(strcmp(temp[0],"fresco_header_only")==0)  {
+                        fFrescoHeaderOnly = true;
+			cout << "Only Header information is taken from fresco file " << endl;
 		}
 		else if(strcmp(temp[0],"output_rootfile_makeEvents")==0){
 			strcpy(fOutFileNameMakeEvents,temp[1]);
@@ -224,6 +231,10 @@ void InputInfo::parse(char filename[100]){
 			cout << "Beam profile - b angle (dy) - requested " << endl;
 		}
                 // analysis related stuff
+		else if(strcmp(temp[0],"no_beam_tracking")==0){
+                        fNoBeamTracking=true;
+			cout << "Beam tracking will not be performed " << endl;
+		}
 		else if(strcmp(temp[0],"resolution_target_x")==0){
 			fResTargetX=atof(temp[1]);
 			cout << "Resolution of target X position is set to '" << fResTargetX << "' mm (sigma of a Gaussian)" << endl;
