@@ -22,12 +22,15 @@ FrescoPlotter::~FrescoPlotter(){
 }
 
 
+
 void FrescoPlotter::CreateHistograms(){
-	
-	
-	
-	
-	
+  Int_t fileIndex=600;
+  CreateHistograms(fileIndex);
+}
+
+
+
+void FrescoPlotter::CreateHistograms(Int_t fileIndex){
 	
 	
 	cout << "Welcome to plotter of fresco output" << endl;
@@ -67,13 +70,21 @@ void FrescoPlotter::CreateHistograms(){
         ifstream fin;
 	
 	//check if input file exists
-	ifstream FileTest(fInfo->fOutFileNameFresco);
+        char fileName[500];
+        sprintf(fileName,"%s",fInfo->fOutFileNameFresco);
+        sprintf(fileName,"%s",fInfo->fOutFileNameFresco);
+
+	//ifstream FileTest(fInfo->fOutFileNameFresco);
+	ifstream FileTest(fileName);
 	if(!FileTest){
-		cout << "Can not open file '" << fInfo->fOutFileNameFresco << "'! Does it exist?" << endl;
+		//cout << "Can not open file '" << fInfo->fOutFileNameFresco << "'! Does it exist?" << endl;
+		cout << "Can not open file '" << fileName << "'! Does it exist?" << endl;
 		abort();
 	}else{
-		printf("Opening file '%s'\n", fInfo->fOutFileNameFresco);
-		fin.open(fInfo->fOutFileNameFresco);
+		//printf("Opening file '%s'\n", fInfo->fOutFileNameFresco);
+		//fin.open(fInfo->fOutFileNameFresco);
+		printf("Opening file '%s'\n", fileName);
+		fin.open(fileName);
 	}
 	
 	

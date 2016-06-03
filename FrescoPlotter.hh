@@ -18,6 +18,7 @@ class FrescoPlotter
   ~FrescoPlotter();
 
   void CreateHistograms();
+  void CreateHistograms(Int_t fileIndex);
   void UpdateInput();
 
   // getter
