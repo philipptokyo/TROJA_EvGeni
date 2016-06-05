@@ -681,11 +681,15 @@ Int_t main(Int_t argc, char **argv){
 //
 //  events->Write("events");
   if(info->HaveFrescoFileName()){
+    outfile->mkdir("states", "Integrated cross sections for each beam energy");
+    for(Int_t s=0; s<numberOfStates+1; s++){
+      outfile->mkdir(Form("state%02d", s), Form("state at energy %f MeV", info->fStateEnergy[s]));
+    }
     for(Int_t e=0; e<beamEnergyBins; e++){
-      histCSstates[e]->Write(Form("histCSenergy%02dstates", e));
+      histCSstates[e]->Write(Form("states/histCSenergy%02dstates", e));
       for(Int_t s=0; s<numberOfStates+1; s++){
-        histCScmFresco[e][s]->Write(Form("histCScmFresco_%02d_%02d", e, s));
-        histCScmFrescoCut[e][s]->Write(Form("histCScmFrescoCut _%02d_%02d", e, s));
+        histCScmFresco[e][s]->Write(Form("state%02d/histCScmFresco_%02d_%02d", s, e, s));
+        //histCScmFrescoCut[e][s]->Write(Form("histCScmFrescoCut _%02d_%02d", e, s));
       }
     }
   }

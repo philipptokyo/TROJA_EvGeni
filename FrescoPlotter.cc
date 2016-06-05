@@ -134,7 +134,7 @@ void FrescoPlotter::CreateHistograms(){
 	        
                 // get reaction	
                 if(counter==3 ){
-                  printf("Got reaction: %s\n", cTemp[0]);
+                  printf("FrescoPlotter: found reaction: %s\n", cTemp[0]);
                   Int_t pos[3]={-1};
                   string sReac = cTemp[0];
                   
@@ -152,7 +152,7 @@ void FrescoPlotter::CreateHistograms(){
                   fReco[pos[2]-pos[1]-1]='\0';
                   fEjec[sReac.size()-pos[2]-1]='\0';
                   
-                  printf("proj = %s, targ = %s, reco = %s, ejec = %s\n", fProj, fTarg, fReco, fEjec);
+                  printf("FrescoPlotter: Projectile = %s, Target = %s, Recoiled particle = %s, Ejectile = %s\n", fProj, fTarg, fReco, fEjec);
 
                   // get number of nucleons in projectile
                   fProjA = atoi(fProj);
@@ -177,7 +177,7 @@ void FrescoPlotter::CreateHistograms(){
                   energyMin=atof(cTemp[1]);
                   energyMax=atof(cTemp[3]);
                   energyBinsFresco = atoi(cTemp[5]) + 1; // fresco gives the intervals
-                  printf("FrescoPlotter: Got %d bins from %f to %f\n", energyBinsFresco, energyMin, energyMax);
+                  printf("FrescoPlotter: found beam energy distribution: %d bins from %f MeV to %f MeV\n", energyBinsFresco, energyMin, energyMax);
 
                   if(energyBinsFresco > energyBinsMax){
                     printf("FrescoPlotter: found more energy bins than allowed (%d)! Please increase the number of bins 'energyBinsMax' in FrescoPlotter.cc\n", energyBinsMax);
@@ -191,11 +191,15 @@ void FrescoPlotter::CreateHistograms(){
 
 
                 if( (strcmp(cTemp[0],"INCOMING")==0) && (strcmp(cTemp[1],fProj)==0) && (strcmp(cTemp[2],";")==0) && (strcmp(cTemp[3],"LABORATORY")==0) && (strcmp(cTemp[4],fProj)==0) && (strcmp(cTemp[5],"ENERGY")==0) ){
-                  fBeamEnergy[energyBin] = atof(cTemp[7])/fProjA;
-                  printf("FrescoPlotter: found beam energy %f MeV/u, %f MeV \n", fBeamEnergy[energyBin], fBeamEnergy[energyBin]*fProjA);
-		
+                  
                   energyBin++;
-		  printf("energy bin is increased to %d\n", energyBin);	
+                  
+                  fBeamEnergy[energyBin] = atof(cTemp[7])/fProjA;
+                  printf("FrescoPlotter: found beam energy bin %d: %f MeV/u, %f MeV \n", energyBin, fBeamEnergy[energyBin], fBeamEnergy[energyBin]*fProjA);
+		
+                  if(verbose){
+		    printf("energy bin is increased to %d\n", energyBin);	
+                  }
                 }
 
                 // get number of states and their energies in outgoing channel
@@ -212,7 +216,8 @@ void FrescoPlotter::CreateHistograms(){
                   }
 
                   fNumberOfStates=atoi(cTemp[6]);
-                  printf("FrescoPlotter: Found %i states \n", fNumberOfStates);
+                    printf("FrescoPlotter: Found %i states \n", fNumberOfStates);
+
                   if(fNumberOfStates>maxNumberOfStates){
                     printf("Error: Found more states (%d) than array size allows (%d). Please incease the array size (FrescoPlotter)\n", fNumberOfStates, maxNumberOfStates);
                     abort();
@@ -231,7 +236,7 @@ void FrescoPlotter::CreateHistograms(){
 
                     if((strcmp(cTemp[1],"J=")==0) && (strcmp(cTemp[4],"E=")==0)){
                       fStateEnergy[atoi(cTemp[0])] = atof(cTemp[5]); 
-                      printf("Found state %d with energy %f\n", atoi(cTemp[0]), fStateEnergy[atoi(cTemp[0])]);
+                        printf("Found state %d with energy %f\n", atoi(cTemp[0]), fStateEnergy[atoi(cTemp[0])]);
                     }
 
 
@@ -253,11 +258,15 @@ void FrescoPlotter::CreateHistograms(){
                         
                         if((strcmp(cTemp[4], fProj)==0) && (strcmp(cTemp[6], fTarg)==0) && (strcmp(cTemp[8],"state")==0) && (strcmp(cTemp[10],"1")==0)){
                           index = 0; // elastic
-                          printf("FrescoPlotter: found elastic scattering cross sections\n");
+                          if(verbose){
+                            printf("FrescoPlotter: found elastic scattering cross sections\n");
+                          }
                         }
                         if((strcmp(cTemp[4], fEjec)==0) && (strcmp(cTemp[6], fReco)==0) && (strcmp(cTemp[8],"state")==0) ){
                           index = atoi(cTemp[10]);
-                          printf("FrescoPlotter: found transfer to state %d cross sections\n", index);
+                          if(verbose){
+                            printf("FrescoPlotter: found transfer to state %d cross sections\n", index);
+                          }
                         }
                         
 			
@@ -319,9 +328,15 @@ void FrescoPlotter::CreateHistograms(){
 
 	} //end of reading input file
 	
+        energyBin++; // started counting from -1, due to convinence with fresco file structure
+
+
 	fin.close();
         
-        fBeamEnergyBins = energyBin;	
+        fBeamEnergyBins = energyBin;
+        if(energyBinsFresco==1){
+          fBeamEnergyBins=energyBinsFresco;
+        }
 	cout << counter << " lines processed. End of input file. \nFound " << energyBin << " entries for beam energy each with "  << entry << " entries for cross section" << endl;
 	
 	
@@ -385,7 +400,11 @@ void FrescoPlotter::UpdateInput(){
     fInfo->fStateEnergy[s] = fStateEnergy[s];
   }
 
-  fInfo->fBeamEnergy = fBeamEnergy[0]; // todo: update InputInfo
+  if(fBeamEnergyBins>1){
+    fInfo->fBeamEnergy = fBeamEnergy[(Int_t)(fBeamEnergyBins/2)]; 
+  }else{
+    fInfo->fBeamEnergy = fBeamEnergy[0]; 
+  }
   printf("Beam energy set to %f AMeV (%f MeV)\n", fInfo->fBeamEnergy, fInfo->fBeamEnergy * fInfo->fProjA);
 
   if((fProjA != fInfo->fProjA) || (fEjecA != (fInfo->fProjA + fInfo->fTargetA - fInfo->fLightA))){
