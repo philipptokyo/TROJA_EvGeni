@@ -52,6 +52,7 @@ Int_t main(Int_t argc, char **argv){
   //get information from textfile
   info->parse(argv[1]);
   
+  char tmp1[200], tmp2[200];
 
   Int_t numberOfStates=info->fNumberOfStates;
   //Float_t maxExEnergy=info->fMaxExEnergy;
@@ -63,9 +64,11 @@ Int_t main(Int_t argc, char **argv){
   Int_t beamEnergyBins=1; // todo: define this in InputInfo
   Int_t binN;
   Double_t binL, binU;
+  TH1F* histCSstates[maxBeamEnergyBins]; 
   TH1F* histCScmFresco[maxBeamEnergyBins][maxNumberOfStates+1];
   TH1F* histCScmFrescoCut[maxBeamEnergyBins][maxNumberOfStates+1];
-  TH1F* histCSstates[maxBeamEnergyBins]; 
+  TH2F* histCScmFresco2d[maxNumberOfStates+1];
+  TH2F* histCScmFresco2dCut[maxNumberOfStates+1];
   
   if(info->HaveFrescoFileName()){
     FrescoPlotter* frescoPlotter = new FrescoPlotter(info);
@@ -92,7 +95,6 @@ Int_t main(Int_t argc, char **argv){
 
      
     for(Int_t e=0; e<beamEnergyBins; e++){
-      char tmp1[200], tmp2[200];
       sprintf(tmp1, "histCSenergy%02dstates", e);
       sprintf(tmp2, "Integrated cross sections vs. state for beam energy %f MeV (%f AMeV)", frescoPlotter->GetBeamEnergyMeV(e), frescoPlotter->GetBeamEnergyAMeV(e));
       histCSstates[e] = new TH1F(tmp1, tmp2, numberOfStates+1, 0, numberOfStates+1);
@@ -118,6 +120,18 @@ Int_t main(Int_t argc, char **argv){
           histCSstates[e]->SetBinContent(h+1, histCScmFresco[e][h]->Integral(0, binN));
         }
       }
+    }
+
+    for(Int_t h=0; h<numberOfStates+1; h++){
+      histCScmFresco2d[h] = frescoPlotter->Get2DHistogramState(h);
+      histCScmFresco2dCut[h] = (TH2F*)histCScmFresco2d[h]->Clone();
+
+      //Int_t bm=histCScmFresco2d[h]->GetNbins();
+      //for(Int_t b=0; b<bm; b++){
+      //  if(b<binF || b>=binT){
+      //    histCScmFresco2dCut[h]->SetBinContent(b, 0.0);
+      //  }
+      //}
     }
 
 
@@ -681,17 +695,35 @@ Int_t main(Int_t argc, char **argv){
 //
 //  events->Write("events");
   if(info->HaveFrescoFileName()){
+    // create folders
     outfile->mkdir("states", "Integrated cross sections for each beam energy");
     for(Int_t s=0; s<numberOfStates+1; s++){
-      outfile->mkdir(Form("state%02d", s), Form("state at energy %f MeV", info->fStateEnergy[s]));
+      sprintf(tmp1, "state%02d", s);
+      if(s==0){
+        sprintf(tmp2, "state at energy %f MeV, elastic scattering", info->fStateEnergy[s]);
+      }else{
+        sprintf(tmp2, "state at energy %f MeV", info->fStateEnergy[s]);
+      }
+      outfile->mkdir(tmp1, tmp2);
     }
+    
+    // write histograms
     for(Int_t e=0; e<beamEnergyBins; e++){
-      histCSstates[e]->Write(Form("states/histCSenergy%02dstates", e));
+      outfile->cd("states");
+      histCSstates[e]->Write(Form("histCSenergy%02dstates", e));
       for(Int_t s=0; s<numberOfStates+1; s++){
-        histCScmFresco[e][s]->Write(Form("state%02d/histCScmFresco_%02d_%02d", s, e, s));
-        //histCScmFrescoCut[e][s]->Write(Form("histCScmFrescoCut _%02d_%02d", e, s));
+        outfile->cd(Form("state%02d", s));
+//        histCScmFresco[e][s]->Write(Form("histCScmFresco_%02d", e));
+//        histCScmFrescoCut[e][s]->Write(Form("histCScmFrescoCut _%02d", e));
       }
     }
+    
+    // write 2d histograms
+    for(Int_t s=0; s<numberOfStates+1; s++){
+      outfile->cd();
+      histCScmFresco2d[s]->Write(Form("histCScmFresco2d_%02d", s));
+    }
+
   }
 //  histCScm->Write("histCScm");
 //  histCScmDeg->Write("histCScmDeg");

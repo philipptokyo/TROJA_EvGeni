@@ -47,7 +47,7 @@ void FrescoPlotter::CreateHistograms(){
         //const Int_t energyBinsMax=20; // in header
         const Float_t deg2rad = TMath::Pi()/180.0;
 
-        Int_t energyBin=-1, energyBinsFresco=0; // counter and value from fresco file
+        Int_t energyBin=-1, energyBinsFresco=0; // counter for energy bins and its value from fresco file
         Float_t energyMin=0.0;
         Float_t energyMax=0.0;
 	
@@ -358,17 +358,42 @@ void FrescoPlotter::CreateHistograms(){
           for(Int_t s=0; s<maxNumberOfStates+1; s++){
             sprintf(cTemp[0], "CSenergy%02dstate%02d", e, s);
             if(s==0){
-              sprintf(cTemp[1], "Cross Sections for beam energy %f, elastic scattering", fBeamEnergy[e]);
+              sprintf(cTemp[1], "Cross Sections for beam energy %02d: %f AMeV, elastic scattering", e, fBeamEnergy[e]);
             }else{
-              sprintf(cTemp[1], "Cross Sections for beam energy %f, transfer to state %d", fBeamEnergy[e], s);
+              sprintf(cTemp[1], "Cross Sections for beam energy %02d: %f AMeV, transfer to state %d", e, fBeamEnergy[e], s);
             }
             fHistCS[e][s]=new TH1F(cTemp[0] ,cTemp[1] , entry, angleMin, angleMax);
+            fHistCS[e][s]->GetXaxis()->SetTitle("#vartheta_{CM}");
+            fHistCS[e][s]->GetYaxis()->SetTitle("#sigma in mb/sr");
 
             for(Int_t es=0; es<entry; es++){
               fHistCS[e][s]->SetBinContent(es+1, crossSection[e][s][es]);
             }
           }
         }
+
+
+        for(Int_t s=0; s<maxNumberOfStates+1; s++){
+          sprintf(cTemp[0], "CSstate%02d", s);
+          if(s==0){
+            sprintf(cTemp[1], "Cross Sections for elastic scattering");
+          }else{
+            sprintf(cTemp[1], "Cross Sections for transfer to state %d", s);
+          }
+
+          fHistCS2d[s] = new TH2F(cTemp[0], cTemp[1], entry, angleMin, angleMax, energyBin, energyMin, energyMax);
+          for(Int_t e=0; e<energyBin; e++){
+            for(Int_t es=0; es<entry; es++){
+              Int_t bb=fHistCS2d[s]->GetBin(es, e);
+              fHistCS2d[s]->SetBinContent(bb, crossSection[e][s][es]);
+              fHistCS2d[s]->GetXaxis()->SetTitle("#vartheta_{CM}");
+              fHistCS2d[s]->GetYaxis()->SetTitle("E_{beam} in MeV");
+              fHistCS2d[s]->GetZaxis()->SetTitle("#sigma in mb/sr");
+            }
+          }
+        }
+
+
 //	histCS->Write("histCS");
 	
 //	histCS->Draw();

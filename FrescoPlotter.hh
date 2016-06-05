@@ -39,6 +39,7 @@ class FrescoPlotter
 
   //TH1F* GetHistogramElastic(){return fHistCSelast;}
   TH1F* GetHistogramState(Int_t e, Int_t s){return fHistCS[e][s];}
+  TH2F* Get2DHistogramState(Int_t s){return fHistCS2d[s];}
 
   private:
   InputInfo* fInfo;
@@ -54,6 +55,7 @@ class FrescoPlotter
 
   //TH1F *fHistCSelast;
   TH1F *fHistCS[energyBinsMax][maxNumberOfStates+1];
+  TH2F *fHistCS2d[maxNumberOfStates+1];
 
 
 };
