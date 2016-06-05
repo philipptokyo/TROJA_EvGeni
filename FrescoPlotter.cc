@@ -44,8 +44,12 @@ void FrescoPlotter::CreateHistograms(){
 	
 	const Int_t columns=23;
         const Int_t arraySize = 200;
-        const Int_t energyBinsMax=20;
+        //const Int_t energyBinsMax=20; // in header
         const Float_t deg2rad = TMath::Pi()/180.0;
+
+        Int_t energyBin=-1, energyBinsFresco=0; // counter and value from fresco file
+        Float_t energyMin=0.0;
+        Float_t energyMax=0.0;
 	
         ////todo: put this in header
         //char proj[10], targ[10], reco[10], ejec[10];
@@ -66,10 +70,10 @@ void FrescoPlotter::CreateHistograms(){
 	
 	
 	//variables to read from text file
-	Float_t angle[maxNumberOfStates+1][arraySize]={{-1.0}};
-	Float_t crossSection[maxNumberOfStates+1][arraySize]={{-1.0}};
-	//Float_t angle[energyBinsMax][maxNumberOfStates+1][arraySize]={{{-1.0}}};
-	//Float_t crossSection[energyBinsMax][maxNumberOfStates+1][arraySize]={{{-1.0}}};
+	//Float_t angle[maxNumberOfStates+1][arraySize]={{-1.0}};
+	//Float_t crossSection[maxNumberOfStates+1][arraySize]={{-1.0}};
+	Float_t angle[energyBinsMax][maxNumberOfStates+1][arraySize]={{{-1.0}}};
+	Float_t crossSection[energyBinsMax][maxNumberOfStates+1][arraySize]={{{-1.0}}};
 	
         ifstream fin;
 	
@@ -94,7 +98,7 @@ void FrescoPlotter::CreateHistograms(){
 	
 	//variables for writing to root file
 	
-	const ULong64_t stopper=100000; //
+	const ULong64_t stopper=1000000; //
 	
 	if(verbose){cout << "Stopping after " << stopper << " lines." << endl;}
 	
@@ -170,12 +174,12 @@ void FrescoPlotter::CreateHistograms(){
 		  for(Int_t i=0; i<columns; i++){
 		  	iss >> cTemp[i];
 		  }
-                  Float_t energyMin=atof(cTemp[1]);
-                  Float_t energyMax=atof(cTemp[3]);
-                  Int_t energyBins = atoi(cTemp[5]);
-                  printf("Got %d bins from %f to %f\n", energyBins, energyMin, energyMax);
+                  energyMin=atof(cTemp[1]);
+                  energyMax=atof(cTemp[3]);
+                  energyBinsFresco = atoi(cTemp[5]) + 1; // fresco gives the intervals
+                  printf("FrescoPlotter: Got %d bins from %f to %f\n", energyBinsFresco, energyMin, energyMax);
 
-                  if(energyBins > energyBinsMax){
+                  if(energyBinsFresco > energyBinsMax){
                     printf("FrescoPlotter: found more energy bins than allowed (%d)! Please increase the number of bins 'energyBinsMax' in FrescoPlotter.cc\n", energyBinsMax);
                     abort();
                   }
@@ -187,8 +191,11 @@ void FrescoPlotter::CreateHistograms(){
 
 
                 if( (strcmp(cTemp[0],"INCOMING")==0) && (strcmp(cTemp[1],fProj)==0) && (strcmp(cTemp[2],";")==0) && (strcmp(cTemp[3],"LABORATORY")==0) && (strcmp(cTemp[4],fProj)==0) && (strcmp(cTemp[5],"ENERGY")==0) ){
-                  fBeamEnergy = atof(cTemp[7])/fProjA;
-                  printf("Beam energy is %f MeV/u, %f MeV \n", fBeamEnergy, fBeamEnergy*fProjA);
+                  fBeamEnergy[energyBin] = atof(cTemp[7])/fProjA;
+                  printf("FrescoPlotter: found beam energy %f MeV/u, %f MeV \n", fBeamEnergy[energyBin], fBeamEnergy[energyBin]*fProjA);
+		
+                  energyBin++;
+		  printf("energy bin is increased to %d\n", energyBin);	
                 }
 
                 // get number of states and their energies in outgoing channel
@@ -205,7 +212,7 @@ void FrescoPlotter::CreateHistograms(){
                   }
 
                   fNumberOfStates=atoi(cTemp[6]);
-                  printf("Found %i states \n", fNumberOfStates);
+                  printf("FrescoPlotter: Found %i states \n", fNumberOfStates);
                   if(fNumberOfStates>maxNumberOfStates){
                     printf("Error: Found more states (%d) than array size allows (%d). Please incease the array size (FrescoPlotter)\n", fNumberOfStates, maxNumberOfStates);
                     abort();
@@ -246,9 +253,11 @@ void FrescoPlotter::CreateHistograms(){
                         
                         if((strcmp(cTemp[4], fProj)==0) && (strcmp(cTemp[6], fTarg)==0) && (strcmp(cTemp[8],"state")==0) && (strcmp(cTemp[10],"1")==0)){
                           index = 0; // elastic
+                          printf("FrescoPlotter: found elastic scattering cross sections\n");
                         }
                         if((strcmp(cTemp[4], fEjec)==0) && (strcmp(cTemp[6], fReco)==0) && (strcmp(cTemp[8],"state")==0) ){
                           index = atoi(cTemp[10]);
+                          printf("FrescoPlotter: found transfer to state %d cross sections\n", index);
                         }
                         
 			
@@ -281,10 +290,10 @@ void FrescoPlotter::CreateHistograms(){
 				}
 				
                                 if(strcmp(cTemp[1],"deg.:")==0){
-                                  angle[index][entry] = atof(cTemp[0]);
-                                  crossSection[index][entry] = atof(cTemp[4]);
+                                  angle[energyBin][index][entry] = atof(cTemp[0]);
+                                  crossSection[energyBin][index][entry] = atof(cTemp[4]);
                                   if(verbose){
-                                    cout << "Extracted: entry number " << entry << ", angle " << angle[index][entry] << ", cross section " << crossSection[index][entry] << endl;
+                                    cout << "Extracted: entry number " << entry << ", angle " << angle[energyBin][index][entry] << ", cross section " << crossSection[energyBin][index][entry] << endl;
                                   }
                                   entry++;
                                 }
@@ -295,11 +304,11 @@ void FrescoPlotter::CreateHistograms(){
 			} //loop over population information
 			
 			
-			
-			
 		}
 		
-		
+	        
+                
+                	
 		//count lines
 		counter++;
 		if(counter>stopper){
@@ -311,8 +320,9 @@ void FrescoPlotter::CreateHistograms(){
 	} //end of reading input file
 	
 	fin.close();
-	
-	cout << counter << " lines processed. End of input file. \nFound " << entry << " entries for cross section" << endl;
+        
+        fBeamEnergyBins = energyBin;	
+	cout << counter << " lines processed. End of input file. \nFound " << energyBin << " entries for beam energy each with "  << entry << " entries for cross section" << endl;
 	
 	
  //       outfile->cd();	
@@ -320,8 +330,8 @@ void FrescoPlotter::CreateHistograms(){
 	
 	cout << "Creating Histograms for cross sections" << endl;
 
-        Float_t min = angle[0][0]*deg2rad;
-        Float_t max = (angle[0][entry-1]+(angle[0][entry-1]-angle[0][0])/entry)*deg2rad;
+        Float_t angleMin = angle[0][0][0]*deg2rad;
+        Float_t angleMax = (angle[0][0][entry-1]+(angle[0][0][entry-1]-angle[0][0][0])/entry)*deg2rad;
 	
         //fHistCSelast = new TH1F("CSelast","Cross Sections, elastic scattering", entry, min, max);
         //for(Int_t e=0; e<entry; e++){
@@ -329,20 +339,21 @@ void FrescoPlotter::CreateHistograms(){
         //}
 
 
-        for(Int_t s=0; s<maxNumberOfStates+1; s++){
-          sprintf(cTemp[0], "CSstate%02d", s);
-          if(s==0){
-            sprintf(cTemp[1], "Cross Sections, elastic scattering");
-          }else{
-            sprintf(cTemp[1], "Cross Sections, transfer to state %d", s);
-          }
-          fHistCS[s]=new TH1F(cTemp[0] ,cTemp[1] , entry, min, max);
+        for(Int_t e=0; e<energyBin; e++){
+          for(Int_t s=0; s<maxNumberOfStates+1; s++){
+            sprintf(cTemp[0], "CSenergy%02dstate%02d", e, s);
+            if(s==0){
+              sprintf(cTemp[1], "Cross Sections for beam energy %f, elastic scattering", fBeamEnergy[e]);
+            }else{
+              sprintf(cTemp[1], "Cross Sections for beam energy %f, transfer to state %d", fBeamEnergy[e], s);
+            }
+            fHistCS[e][s]=new TH1F(cTemp[0] ,cTemp[1] , entry, angleMin, angleMax);
 
-          for(Int_t e=0; e<entry; e++){
-            fHistCS[s]->SetBinContent(e+1, crossSection[s][e]);
+            for(Int_t es=0; es<entry; es++){
+              fHistCS[e][s]->SetBinContent(es+1, crossSection[e][s][es]);
+            }
           }
         }
-        
 //	histCS->Write("histCS");
 	
 //	histCS->Draw();
@@ -374,8 +385,8 @@ void FrescoPlotter::UpdateInput(){
     fInfo->fStateEnergy[s] = fStateEnergy[s];
   }
 
-  fInfo->fBeamEnergy = fBeamEnergy;
-  printf("Beam energy set to %f MeV/u (%f MeV)\n", fInfo->fBeamEnergy, fInfo->fBeamEnergy * fInfo->fProjA);
+  fInfo->fBeamEnergy = fBeamEnergy[0]; // todo: update InputInfo
+  printf("Beam energy set to %f AMeV (%f MeV)\n", fInfo->fBeamEnergy, fInfo->fBeamEnergy * fInfo->fProjA);
 
   if((fProjA != fInfo->fProjA) || (fEjecA != (fInfo->fProjA + fInfo->fTargetA - fInfo->fLightA))){
     printf("Error: Projectile and/or Ejectile are not the same in input text file and fresco output text file:\n");
