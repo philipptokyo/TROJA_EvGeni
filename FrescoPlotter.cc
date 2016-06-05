@@ -23,14 +23,15 @@ FrescoPlotter::~FrescoPlotter(){
 
 
 
+//void FrescoPlotter::CreateHistograms(){
+//  Int_t fileIndex=600;
+//  CreateHistograms(fileIndex);
+//}
+
+
+
+//void FrescoPlotter::CreateHistograms(Int_t fileIndex){
 void FrescoPlotter::CreateHistograms(){
-  Int_t fileIndex=600;
-  CreateHistograms(fileIndex);
-}
-
-
-
-void FrescoPlotter::CreateHistograms(Int_t fileIndex){
 	
 	
 	cout << "Welcome to plotter of fresco output" << endl;
@@ -43,6 +44,7 @@ void FrescoPlotter::CreateHistograms(Int_t fileIndex){
 	
 	const Int_t columns=23;
         const Int_t arraySize = 200;
+        const Int_t energyBinsMax=20;
         const Float_t deg2rad = TMath::Pi()/180.0;
 	
         ////todo: put this in header
@@ -66,6 +68,8 @@ void FrescoPlotter::CreateHistograms(Int_t fileIndex){
 	//variables to read from text file
 	Float_t angle[maxNumberOfStates+1][arraySize]={{-1.0}};
 	Float_t crossSection[maxNumberOfStates+1][arraySize]={{-1.0}};
+	//Float_t angle[energyBinsMax][maxNumberOfStates+1][arraySize]={{{-1.0}}};
+	//Float_t crossSection[energyBinsMax][maxNumberOfStates+1][arraySize]={{{-1.0}}};
 	
         ifstream fin;
 	
@@ -156,6 +160,32 @@ void FrescoPlotter::CreateHistograms(Int_t fileIndex){
                 }
 
                 // get the beam energy given in the fresco input file
+
+                if( (strcmp(cTemp[0],"0Lab.")==0) && (strcmp(cTemp[1],"ENERGY")==0) && (strcmp(cTemp[2],"ranges")==0) && (strcmp(cTemp[3],":")==0) ){
+                  getline(fin,line);
+                  getline(fin,line);
+                  //printf("Debug: I am at line '%s'\n", line.c_str());
+
+		  std::istringstream iss(line);
+		  for(Int_t i=0; i<columns; i++){
+		  	iss >> cTemp[i];
+		  }
+                  Float_t energyMin=atof(cTemp[1]);
+                  Float_t energyMax=atof(cTemp[3]);
+                  Int_t energyBins = atoi(cTemp[5]);
+                  printf("Got %d bins from %f to %f\n", energyBins, energyMin, energyMax);
+
+                  if(energyBins > energyBinsMax){
+                    printf("FrescoPlotter: found more energy bins than allowed (%d)! Please increase the number of bins 'energyBinsMax' in FrescoPlotter.cc\n", energyBinsMax);
+                    abort();
+                  }
+
+
+                  //abort();
+                }
+
+
+
                 if( (strcmp(cTemp[0],"INCOMING")==0) && (strcmp(cTemp[1],fProj)==0) && (strcmp(cTemp[2],";")==0) && (strcmp(cTemp[3],"LABORATORY")==0) && (strcmp(cTemp[4],fProj)==0) && (strcmp(cTemp[5],"ENERGY")==0) ){
                   fBeamEnergy = atof(cTemp[7])/fProjA;
                   printf("Beam energy is %f MeV/u, %f MeV \n", fBeamEnergy, fBeamEnergy*fProjA);
