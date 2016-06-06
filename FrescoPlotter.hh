@@ -7,7 +7,7 @@
 #include "InputInfo.hh"
 
 // #define maxNumberOfStates 10 // is now defined in InputInfo.hh
-#define energyBinsMax 20
+#define energyBinsMax 200
 
 
 class FrescoPlotter

@@ -180,7 +180,7 @@ void FrescoPlotter::CreateHistograms(){
                   printf("FrescoPlotter: found beam energy distribution: %d bins from %f MeV to %f MeV\n", energyBinsFresco, energyMin, energyMax);
 
                   if(energyBinsFresco > energyBinsMax){
-                    printf("FrescoPlotter: found more energy bins than allowed (%d)! Please increase the number of bins 'energyBinsMax' in FrescoPlotter.cc\n", energyBinsMax);
+                    printf("FrescoPlotter: found more energy bins than allowed (%d)! Please increase the number of bins 'energyBinsMax' in FrescoPlotter.hh\n", energyBinsMax);
                     abort();
                   }
 
