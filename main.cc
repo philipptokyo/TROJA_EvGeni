@@ -488,7 +488,7 @@ Int_t main(Int_t argc, char **argv){
   // this is actually deprecated: 
     // check if all states can be populated
     Int_t maxState=numberOfStates+1;
-    if(!info->HaveFrescoFileName()){
+    if(!(info->HaveFrescoFileName()) && !(info->FrescoHeaderOnly()) ){
       for(Int_t s=0; s<numberOfStates+1; s++){
         if(beamE < stateEnergy[s]){
           maxState=s;
