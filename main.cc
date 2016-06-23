@@ -570,11 +570,11 @@ Int_t main(Int_t argc, char **argv){
       if(state==0){ 
         lightTheta = reactionTemp->Angle_cm2lab(reactionTemp->GetVcm(2), lightTheta); // conversion from cm to lab
       }else{
-        lightTheta = reactionTemp->Angle_cm2lab(-reactionTemp->GetVcm(2), lightTheta); // conversion from cm to lab
+        lightTheta = reactionTemp->Angle_cm2lab(reactionTemp->GetVcm(2), TMath::Pi()-lightTheta); // conversion from cm to lab
       }
     }else{
       // boost isotropic lab distribution to CM
-      lightThetaCM = reactionTemp->Angle_lab2cm(reactionTemp->GetVcm(2), lightTheta);
+      lightThetaCM = TMath::Pi() - reactionTemp->Angle_lab2cm(reactionTemp->GetVcm(2), lightTheta);
     }
         
     lightEnergy=reactionTemp->ELab(lightTheta,2);
