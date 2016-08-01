@@ -428,8 +428,8 @@ Int_t main(Int_t argc, char **argv){
 
     eventNumber=i; // for the tree
     
-    if((i-1)%100000==0){
-      printf("%i events generating... (%i requested)\n", i, info->fNumberEvents);
+    if(i%100000==0){
+      printf("Generating event %d (%i requested)\n", i, info->fNumberEvents);
     }
 
 
@@ -542,7 +542,7 @@ Int_t main(Int_t argc, char **argv){
       lightTheta=randomizer->Uniform(info->fAngleMin, info->fAngleMax);
     }
     
-    lightThetaCM = lightTheta; // keep it for the root tree 
+    lightThetaCM = lightTheta; // one of them will be boosted, depending on the existence of a fresco file
 
 
     // phi uniform
@@ -579,7 +579,7 @@ Int_t main(Int_t argc, char **argv){
         
     lightEnergy=reactionTemp->ELab(lightTheta,2);
 
-    //printf("CM to Lab conversion (state %d): thetaCM = %f, thetaLab = %f,Vcm = %f, betaCM = %f\n", state, lightThetaCM, lightTheta, reaction[state]->GetVcm(2), reaction[state]->GetBetacm());
+    //printf("CM/Lab conversion (state %d): thetaCM = %f, thetaLab = %f, betaCM = %f, lightEnergy = %f\n", state, lightThetaCM, lightTheta, reaction[state]->GetBetacm(), lightEnergy);
 
     Int_t a, z;
     if(state==0){ // elastic scattering
@@ -637,6 +637,12 @@ Int_t main(Int_t argc, char **argv){
     //if(state==0){
     //  printf("state %d: theta %f, energy %f, mass %f, rec.rho %f,  ex en %f\n", state, lightTheta, lightEnergy, lightMass, rec.Rho(), excEn);
     //}
+
+    if(excEn<-0.02){ // something went wrong
+      printf("Oops, excitation energy is %f MeV! Redoing this event.\n", excEn);
+      i--;
+      continue;
+    }
 
     //delete reactionTemp;
 
