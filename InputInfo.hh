@@ -3,7 +3,7 @@
 
 #include "LibPerso.h"
 
-#define maxNumberOfStates 10
+#define maxNumberOfStates 20
 #define maxCutType 3
 
 class InputInfo

@@ -71,6 +71,7 @@ Int_t main(Int_t argc, char **argv){
   TH1F* histCScmFrescoCut[maxBeamEnergyBins][maxNumberOfStates+1];
   TH2F* histCScmFresco2d[maxNumberOfStates+1];
   //TH2F* histCScmFresco2dCut[maxNumberOfStates+1];
+  TH2F* histETh = new TH2F("histETh", "Energy vs. Theta_lab", 360, 0, 180, 200, 0, 100);
   
   FrescoPlotter* frescoPlotter = new FrescoPlotter(info);
   if(info->HaveFrescoFileName()){
@@ -613,6 +614,8 @@ Int_t main(Int_t argc, char **argv){
     histCSlabDeg->Fill(lightTheta*180.0/TMath::Pi());
     histCSlabVScmDeg->Fill(lightThetaCM*180.0/TMath::Pi(), lightTheta*180.0/TMath::Pi());
 
+    histETh->Fill(lightTheta*180.0/TMath::Pi(), lightEnergy);
+
     //lightEnergy=reaction[s]->ELab(lightTheta/180.0*TMath::Pi(),2);
 
 
@@ -750,6 +753,8 @@ Int_t main(Int_t argc, char **argv){
   histCSlabDeg->Write("histCSlabDeg");
   histCSlabVScm->Write("histCSlabVScm");
   histCSlabVScmDeg->Write("histCSlabVScmDeg");
+  
+  histETh->Write("histETh");
 
   //histCSlab->Draw();
   //histCSlabVScm->Draw();
