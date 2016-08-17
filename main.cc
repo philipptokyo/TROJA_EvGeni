@@ -410,7 +410,30 @@ Int_t main(Int_t argc, char **argv){
     printf("Start generating events...\n");
   }
   
+  
+  if(info->Source()){
+    if(info->fSourceTypeId == 0){
+      lightPdgId=1000020040; // alpha
+    }
+    else if(info->fSourceTypeId == 1){
+      lightPdgId=11; // beta-
+    }
+    else if(info->fSourceTypeId == 2){
+      lightPdgId=-11; // beta+
+    }
+    else if(info->fSourceTypeId == 3){
+      lightPdgId=22; // gamma
+    }
 
+    lightThetaCM=NAN;
+    beamE=NAN;
+    beamA=NAN;
+    beamB=NAN;
+    beamTheta=NAN;
+    beamPhi=NAN;
+    excEn=NAN;
+    missMass=NAN;
+  }
 
 
 
@@ -432,6 +455,39 @@ Int_t main(Int_t argc, char **argv){
     if(i%100000==0){
       printf("Generating event %d (%i requested)\n", i, info->fNumberEvents);
     }
+
+
+
+
+
+
+
+
+
+
+    if(info->Source()){
+      
+      lightTheta = randomizer->Uniform(0.0, 180.0)/180.0*TMath::Pi();
+      lightPhi = randomizer->Uniform(0.0, 360.0)/180.0*TMath::Pi();
+      state = (Int_t)randomizer->Uniform(info->fSourceLines);
+      lightEnergy = info->fSourceEnergies[state];
+
+      beamX = randomizer->Uniform(-2.0, 2.0);
+      beamY = randomizer->Uniform(-2.0, 2.0);
+      beamZ = randomizer->Uniform(-0.0005, 0.0005);
+
+      events->Fill();
+
+      continue;
+
+    }
+
+
+
+
+
+
+
 
 
     // get beam information
