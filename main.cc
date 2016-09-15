@@ -342,7 +342,7 @@ printf("getting q vaue, number of states is %i\n", numberOfStates);
     //treeBeamProfile->SetBranchAddress("fhxout", fhxout); // full sim file
     treeBeamProfile->SetBranchAddress("mass", &projA); // shortened sim file
     treeBeamProfile->SetBranchAddress("z", &projZ);  // shortened sim file
-    treeBeamProfile->SetBranchAddress("energy", &beamE);  // shortened sim file
+    treeBeamProfile->SetBranchAddress("energy", &beamE);  // MeV/u, shortened sim file
     treeBeamProfile->SetBranchAddress("x", &beamX);       // shortened sim file
     treeBeamProfile->SetBranchAddress("y", &beamY);       // shortened sim file
     treeBeamProfile->SetBranchAddress("a", &beamA);       // shortened sim file
@@ -373,6 +373,18 @@ printf("getting q vaue, number of states is %i\n", numberOfStates);
   Int_t state=0; // aux, which state is populated
   Float_t excEn=0.0, missMass=0.0; // for cross checks with analysis code
 
+  
+  // gamma variables
+  const Int_t maxGammas = 2;
+  Int_t gammaMul=0;
+  Float_t gammaE[maxGammas]={NAN};
+  Float_t gammaERest[maxGammas]={NAN};
+  Float_t gammaTheta[maxGammas]={NAN};
+  Float_t gammaThetaRest[maxGammas]={NAN};
+  Float_t gammaPhi[maxGammas]={NAN};
+  Float_t gammaPhiRest[maxGammas]={NAN};
+
+
   TTree *events = new TTree();
   events->Branch("eventNumber", &eventNumber, "eventNumber/I");
   
@@ -395,6 +407,25 @@ printf("getting q vaue, number of states is %i\n", numberOfStates);
   events->Branch("state", &state, "state/I");
   events->Branch("excitationEnergy", &excEn, "excitationEnergy/F");
   events->Branch("missingMass", &missMass, "missingMass/F");
+
+  // gamma data
+  events->Branch("gammaMul", &gammaMul, "gammaMul/I");
+  sprintf(tmp1, "gammaE[%d]/F", maxGammas);
+  events->Branch("gammaE", gammaE, tmp1);
+  sprintf(tmp1, "gammaTheta[%d]/F", maxGammas);
+  events->Branch("gammaTheta", gammaTheta, tmp1);
+  sprintf(tmp1, "gammaPhi[%d]/F", maxGammas);
+  events->Branch("gammaPhi", gammaPhi, tmp1);
+
+  sprintf(tmp1, "gammaERest[%d]/F", maxGammas);
+  events->Branch("gammaERest", gammaERest, tmp1);
+  sprintf(tmp1, "gammaThetaRest[%d]/F", maxGammas);
+  events->Branch("gammaThetaRest", gammaThetaRest, tmp1);
+  sprintf(tmp1, "gammaPhiRest[%d]/F", maxGammas);
+  events->Branch("gammaPhiRest", gammaPhiRest, tmp1);
+
+
+
 
 
   // determine PDG ID of light ejectile
@@ -739,7 +770,7 @@ printf("getting q vaue, number of states is %i\n", numberOfStates);
 
 
     Float_t projGamma = (beamE * (Float_t)projA) / projMass + 1.0;
-    //Float_t projBeta = TMath::Sqrt(1.0 - 1.0/(projGamma*projGamma));
+    Float_t projBeta = TMath::Sqrt(1.0 - 1.0/(projGamma*projGamma));
     Float_t projMomentum = projMass * TMath::Sqrt(projGamma*projGamma - 1.0);
 
     Float_t lightGamma = lightEnergy/lightMass + 1.0;
@@ -764,6 +795,40 @@ printf("getting q vaue, number of states is %i\n", numberOfStates);
     heavyL.SetE(cmEnergy - lightL.E());
 
     missMass = -heavyL.M()+heavyMass;
+    
+
+    // generate gamma
+    if(state>1){
+      gammaMul=1;
+      gammaThetaRest[0]=randomizer->Uniform(0, TMath::Pi());
+      gammaPhiRest[0]=randomizer->Uniform(-TMath::Pi(), TMath::Pi());
+      gammaERest[0]=stateEnergy[state];
+
+      //printf("generated gamma with energy %f, theta %f, phi %f\n", gammaENoBoost[0], gammaTheta[0], gammaPhi[0]);
+
+      TVector3 vGamma(0,0,1);
+      vGamma.SetMagThetaPhi(gammaERest[0], gammaThetaRest[0], gammaPhiRest[0]);
+      TLorentzVector lGamma(vGamma, gammaERest[0]);
+
+      vBeam.SetMag(projBeta);
+
+      lGamma.Boost(vBeam);
+      
+      gammaE[0]=lGamma.P();
+      gammaTheta[0]=lGamma.Theta();
+      gammaPhi[0]=lGamma.Phi();
+
+    }else{
+      gammaMul=0;
+      for(Int_t i=0; i<maxGammas; i++){
+        gammaTheta[i]=NAN;
+        gammaPhi[i]=NAN;
+        gammaE[i]=NAN;
+        gammaThetaRest[i]=NAN;
+        gammaPhiRest[i]=NAN;
+        gammaERest[i]=NAN;
+      }
+    }
 
 
     events->Fill();
