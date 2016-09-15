@@ -340,8 +340,8 @@ printf("getting q vaue, number of states is %i\n", numberOfStates);
     }
 
     //treeBeamProfile->SetBranchAddress("fhxout", fhxout); // full sim file
-    treeBeamProfile->SetBranchAddress("mass", &projA); // shortened sim file
-    treeBeamProfile->SetBranchAddress("z", &projZ);  // shortened sim file
+    //treeBeamProfile->SetBranchAddress("mass", &projA); // shortened sim file
+    //treeBeamProfile->SetBranchAddress("z", &projZ);  // shortened sim file
     treeBeamProfile->SetBranchAddress("energy", &beamE);  // MeV/u, shortened sim file
     treeBeamProfile->SetBranchAddress("x", &beamX);       // shortened sim file
     treeBeamProfile->SetBranchAddress("y", &beamY);       // shortened sim file
@@ -796,37 +796,38 @@ printf("getting q vaue, number of states is %i\n", numberOfStates);
 
     missMass = -heavyL.M()+heavyMass;
     
+    if(info->AddGammas()){
+      // generate gamma
+      if(state>1){
+        gammaMul=1;
+        gammaThetaRest[0]=randomizer->Uniform(0, TMath::Pi());
+        gammaPhiRest[0]=randomizer->Uniform(-TMath::Pi(), TMath::Pi());
+        gammaERest[0]=stateEnergy[state];
 
-    // generate gamma
-    if(state>1){
-      gammaMul=1;
-      gammaThetaRest[0]=randomizer->Uniform(0, TMath::Pi());
-      gammaPhiRest[0]=randomizer->Uniform(-TMath::Pi(), TMath::Pi());
-      gammaERest[0]=stateEnergy[state];
+        //printf("generated gamma with energy %f, theta %f, phi %f\n", gammaENoBoost[0], gammaTheta[0], gammaPhi[0]);
 
-      //printf("generated gamma with energy %f, theta %f, phi %f\n", gammaENoBoost[0], gammaTheta[0], gammaPhi[0]);
+        TVector3 vGamma(0,0,1);
+        vGamma.SetMagThetaPhi(gammaERest[0], gammaThetaRest[0], gammaPhiRest[0]);
+        TLorentzVector lGamma(vGamma, gammaERest[0]);
 
-      TVector3 vGamma(0,0,1);
-      vGamma.SetMagThetaPhi(gammaERest[0], gammaThetaRest[0], gammaPhiRest[0]);
-      TLorentzVector lGamma(vGamma, gammaERest[0]);
+        vBeam.SetMag(projBeta);
 
-      vBeam.SetMag(projBeta);
+        lGamma.Boost(vBeam);
+        
+        gammaE[0]=lGamma.P();
+        gammaTheta[0]=lGamma.Theta();
+        gammaPhi[0]=lGamma.Phi();
 
-      lGamma.Boost(vBeam);
-      
-      gammaE[0]=lGamma.P();
-      gammaTheta[0]=lGamma.Theta();
-      gammaPhi[0]=lGamma.Phi();
-
-    }else{
-      gammaMul=0;
-      for(Int_t i=0; i<maxGammas; i++){
-        gammaTheta[i]=NAN;
-        gammaPhi[i]=NAN;
-        gammaE[i]=NAN;
-        gammaThetaRest[i]=NAN;
-        gammaPhiRest[i]=NAN;
-        gammaERest[i]=NAN;
+      }else{
+        gammaMul=0;
+        for(Int_t i=0; i<maxGammas; i++){
+          gammaTheta[i]=NAN;
+          gammaPhi[i]=NAN;
+          gammaE[i]=NAN;
+          gammaThetaRest[i]=NAN;
+          gammaPhiRest[i]=NAN;
+          gammaERest[i]=NAN;
+        }
       }
     }
 
