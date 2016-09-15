@@ -215,11 +215,23 @@ void FrescoPlotter::CreateHistograms(){
                     //printf("%s ", cTemp[i]);
                   }
 
-                  fNumberOfStates=atoi(cTemp[6]);
+                  if(strcmp(cTemp[6],"STATES=")==0){
+                    fNumberOfStates=atoi(cTemp[7]);
+                  }else{
+                    fNumberOfStates=atoi(cTemp[6]);
+                  }
+
+
+//printf("cTemp[6] = %s\n", cTemp[6]);
+//                  string sStates = cTemp[6];
+//                  cTemp[6][sStates.size()-1]='\0'; // remove the "F" in the end
+//printf("cTemp[6] = %s\n", cTemp[6]);
+
+//                  fNumberOfStates=atoi(cTemp[6]);
                     printf("FrescoPlotter: Found %i states \n", fNumberOfStates);
 
                   if(fNumberOfStates>maxNumberOfStates){
-                    printf("Error: Found more states (%d) than array size allows (%d). Please incease the array size (FrescoPlotter)\n", fNumberOfStates, maxNumberOfStates);
+                    printf("Error: Found more states (%d) than array size allows (%d). Please incease the array size (in InputInfo)\n", fNumberOfStates, maxNumberOfStates);
                     abort();
                   }
 

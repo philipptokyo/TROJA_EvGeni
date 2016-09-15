@@ -77,7 +77,10 @@ Int_t main(Int_t argc, char **argv){
   if(info->HaveFrescoFileName()){
      
     frescoPlotter->CreateHistograms();
+//printf("before frescoPlotter->UpdateInput() -- numberOfStates = %d\n", numberOfStates);
     frescoPlotter->UpdateInput(); // overwrite levels in InputInfo with data from fresco file
+//printf("after  frescoPlotter->UpdateInput() -- numberOfStates = %d\n", numberOfStates);
+//printf("after  frescoPlotter->UpdateInput() -- info->fNumberOfStates = %d\n", info->fNumberOfStates);
     
     //TH1F* histCScmFresco = frescoPlotter->GetHistogramState(1); // todo: remove this one!!
 
@@ -86,6 +89,7 @@ Int_t main(Int_t argc, char **argv){
     
     beamEnergyBins=frescoPlotter->GetBeamEnergyBins();
     numberOfStates=frescoPlotter->GetNumberOfStates();
+//printf("frescoPlotter -- numberOfStates = %d\n", numberOfStates);
     
     // determine angle binning
     histCScmFresco[0][0] = frescoPlotter->GetHistogramState(0, 0);
@@ -186,6 +190,7 @@ Int_t main(Int_t argc, char **argv){
     abort();
   }
 
+//printf("maxNumberOfStates = %d\n", maxNumberOfStates);
   printf("Set:\n");
   //if(numberOfStates>1){
     for(Int_t s=0; s<numberOfStates+1; s++){
@@ -264,7 +269,8 @@ Int_t main(Int_t argc, char **argv){
       reaction[s] = new Kinematics(proj, targ, reco, ejec, beamE*projA, stateEnergy[s]);
       //printf("state energy %d: %f\n", s, stateEnergy[s]);
   }
-
+printf("maxNumberOfStates = %d\n", maxNumberOfStates);
+printf("getting q vaue, number of states is %i\n", numberOfStates);
   qValue=reaction[1]->GetQValue();
   
    
@@ -565,7 +571,9 @@ Int_t main(Int_t argc, char **argv){
       //printf("Debug: Found bin %d for beam energy %f (maxbins %d)\n", energyBin, beamE*projA, frescoPlotter->GetBeamEnergyBins());
       if(frescoPlotter->GetBeamEnergyBins()-1 < energyBin){
         energyBin=frescoPlotter->GetBeamEnergyBins()-1;
-        printf("Warning: beam energy %f is not covered by fresco output! Cross section for highest availabe beam energy are used!\n", beamE*projA);
+        if(frescoPlotter->GetBeamEnergyBins() > 1){
+          printf("Warning: beam energy %f is not covered by fresco output! Cross section for highest availabe beam energy are used!\n", beamE*projA);
+        }
       }
       
       state=(Int_t)histCSstates[energyBin]->GetRandom();
