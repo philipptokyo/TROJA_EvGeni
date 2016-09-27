@@ -437,8 +437,8 @@ void FrescoPlotter::UpdateInput(){
     fInfo->fStateEnergy[s] = fStateEnergy[s];
   }
 
-  if(fBeamEnergyBins>1){
-    fInfo->fBeamEnergy = fBeamEnergy[(Int_t)(fBeamEnergyBins/2)]; 
+  if(fBeamEnergyBins>2){
+    //fInfo->fBeamEnergy = fBeamEnergy[(Int_t)(fBeamEnergyBins/2)]; 
   }else{
     fInfo->fBeamEnergy = fBeamEnergy[0]; 
   }
