@@ -66,10 +66,12 @@ Int_t main(Int_t argc, char **argv){
   Int_t beamEnergyBins=1; // todo: define this in InputInfo
   Int_t binN;
   Double_t binL, binU;
-  TH1F* histCSstates[maxBeamEnergyBins]; 
-  TH1F* histCScmFresco[maxBeamEnergyBins][maxNumberOfStates+1];
-  TH1F* histCScmFrescoCut[maxBeamEnergyBins][maxNumberOfStates+1];
-  TH2F* histCScmFresco2d[maxNumberOfStates+1];
+  TH1F* hist1dCSSPstates[maxBeamEnergyBins]; 
+  TH1F* hist1dCSdOcmFresco[maxBeamEnergyBins][maxNumberOfStates+1];
+  TH1F* hist1dCSdTcmFresco[maxBeamEnergyBins][maxNumberOfStates+1];
+  TH1F* hist1dCSdTcmFrescoCut[maxBeamEnergyBins][maxNumberOfStates+1];
+  TH2F* hist2dCSdOcmFresco[maxNumberOfStates+1];
+  TH2F* hist2dCSdTcmFresco[maxNumberOfStates+1];
   //TH2F* histCScmFresco2dCut[maxNumberOfStates+1];
   TH2F* histETh = new TH2F("histETh", "Energy vs. Theta_lab", 360, 0, 180, 200, 0, 100);
   
@@ -92,68 +94,53 @@ Int_t main(Int_t argc, char **argv){
 //printf("frescoPlotter -- numberOfStates = %d\n", numberOfStates);
     
     // determine angle binning
-    histCScmFresco[0][0] = frescoPlotter->GetHistogramState(0, 0);
-    binN = histCScmFresco[0][0]->GetXaxis()->GetNbins();
-    binL = histCScmFresco[0][0]->GetXaxis()->GetBinLowEdge(0);
-    binU = histCScmFresco[0][0]->GetXaxis()->GetBinUpEdge(binN);
+    hist1dCSdOcmFresco[0][0] = frescoPlotter->Get1DHistogramOmegaState(0, 0);
+    binN = hist1dCSdOcmFresco[0][0]->GetXaxis()->GetNbins();
+    binL = hist1dCSdOcmFresco[0][0]->GetXaxis()->GetBinLowEdge(0);
+    binU = hist1dCSdOcmFresco[0][0]->GetXaxis()->GetBinUpEdge(binN);
 
-    Int_t binF=histCScmFresco[0][0]->FindBin(info->fAngleMin); // cut from bin
-    Int_t binT=histCScmFresco[0][0]->FindBin(info->fAngleMax); // cut to bin
+    Int_t binF=hist1dCSdOcmFresco[0][0]->FindBin(info->fAngleMin); // cut from bin
+    Int_t binT=hist1dCSdOcmFresco[0][0]->FindBin(info->fAngleMax); // cut to bin
 
      
-    for(Int_t e=0; e<beamEnergyBins; e++){
-      sprintf(tmp1, "histCSenergy%02dstates", e);
-      sprintf(tmp2, "Integrated cross sections vs. state for beam energy %f MeV (%f AMeV)", frescoPlotter->GetBeamEnergyMeV(e), frescoPlotter->GetBeamEnergyAMeV(e));
-      histCSstates[e] = new TH1F(tmp1, tmp2, numberOfStates+1, 0, numberOfStates+1);
-    
-   
-      for(Int_t h=0; h<numberOfStates+1; h++){
-        histCScmFresco[e][h] = frescoPlotter->GetHistogramState(e, h);
-        histCScmFrescoCut[e][h] = (TH1F*)histCScmFresco[e][h]->Clone();
 
-        for(Int_t b=0; b<binN; b++){
-          if(b<binF || b>=binT){
-            histCScmFrescoCut[e][h]->SetBinContent(b, 0.0);
-          }
-        }
+    for(Int_t h=0; h<numberOfStates+1; h++){
+      hist2dCSdOcmFresco[h] = frescoPlotter->Get2DHistogramOmegaState(h);
+      hist2dCSdTcmFresco[h] = frescoPlotter->Get2DHistogramThetaState(h);
 
 
+
+      for(Int_t e=0; e<beamEnergyBins; e++){
+        sprintf(tmp1, "histCSSP_energy%02d_states", e);
+        sprintf(tmp2, "Integrated SP cross sections vs. state for beam energy %f MeV (%f AMeV)", frescoPlotter->GetBeamEnergyMeV(e), frescoPlotter->GetBeamEnergyAMeV(e));
+        hist1dCSSPstates[e] = new TH1F(tmp1, tmp2, numberOfStates+1, 0, numberOfStates+1);
+      
+        hist1dCSdOcmFresco[e][h] = frescoPlotter->Get1DHistogramOmegaState(e, h);
+        hist1dCSdTcmFresco[e][h] = frescoPlotter->Get1DHistogramThetaState(e, h);
+        hist1dCSdTcmFrescoCut[e][h] = (TH1F*)hist1dCSdTcmFresco[e][h]->Clone();
+     
+  
         if((info->IncludeElastic() && h==0) ){
           //histCSstates->SetBinContent(h+1, (histCScmFresco[h]->Integral(binF, binT))/info->fElasticDownscale);
-          histCSstates[e]->SetBinContent(h+1, (histCScmFresco[e][h]->Integral(0, binN))/info->fElasticDownscale);
+          //histCSstates[e]->SetBinContent(h+1, (histCScmFresco[e][h]->Integral(0, binN))/info->fElasticDownscale);
+          hist1dCSSPstates[e]->SetBinContent(h+1, TMath::Pi()/180.0* (hist1dCSdTcmFresco[e][h]->Integral(0, binN))/info->fElasticDownscale);
           //printf("Histogram %d: integral from %f (bin %d) to %f (bin%d) is %f\n", h, info->fAngleMin, bin1, info->fAngleMax, bin2, histCScmFresco[h]->Integral(bin1, bin2));
         }else if(h>0){
           //histCSstates->SetBinContent(h+1, histCScmFresco[h]->Integral(binF, binT));
-          histCSstates[e]->SetBinContent(h+1, histCScmFresco[e][h]->Integral(0, binN));
+          hist1dCSSPstates[e]->SetBinContent(h+1, TMath::Pi()/180.0* hist1dCSdTcmFresco[e][h]->Integral(0, binN));
         }
+  
+        for(Int_t b=0; b<binN; b++){
+          if(b<binF || b>=binT){
+            hist1dCSdTcmFrescoCut[e][h]->SetBinContent(b, 0.0);
+          }
+        }
+  
       }
+
+
     }
 
-    for(Int_t h=0; h<numberOfStates+1; h++){
-      histCScmFresco2d[h] = frescoPlotter->Get2DHistogramState(h);
-      //histCScmFresco2dCut[h] = (TH2F*)histCScmFresco2d[h]->Clone();
-
-      //Int_t bm=histCScmFresco2d[h]->GetNbins();
-      //for(Int_t b=0; b<bm; b++){
-      //  if(b<binF || b>=binT){
-      //    histCScmFresco2dCut[h]->SetBinContent(b, 0.0);
-      //  }
-      //}
-    }
-
-
-    //TCanvas* canCS = new TCanvas();
-    //canCS->cd();
-    //histCSstates->Draw();
-    ////canCS->Divide(4,3);
-    //////canCS->cd(1);
-    //////histCScmFrescoElast->Draw();
-    ////for(Int_t h=0; h<numberOfStates+1; h++){
-    ////  canCS->cd(h+1);
-    ////  histCScmFresco[h]->Draw();
-    ////}
-
-    //theApp->Run();
 
 
     //histCScmFresco->Draw();
@@ -220,7 +207,7 @@ Int_t main(Int_t argc, char **argv){
 
   TRandom3 *randomizer=new TRandom3();  
   randomizer->SetSeed(0);
-  
+  TF1 *sinus = new TF1("sinus","sin(x)",0,TMath::Pi()); 
 
   Int_t projA=info->fProjA;
   Int_t projZ=info->fProjZ;
@@ -369,6 +356,7 @@ printf("getting q vaue, number of states is %i\n", numberOfStates);
   Int_t lightPdgId=2212; //proton
   //Int_t heavyPdgId=1000501330; // 133Sn
   Int_t eventNumber=0;
+  Double_t cs=0;
 
   Int_t state=0; // aux, which state is populated
   Float_t excEn=0.0, missMass=0.0; // for cross checks with analysis code
@@ -407,6 +395,8 @@ printf("getting q vaue, number of states is %i\n", numberOfStates);
   events->Branch("state", &state, "state/I");
   events->Branch("excitationEnergy", &excEn, "excitationEnergy/F");
   events->Branch("missingMass", &missMass, "missingMass/F");
+  events->Branch("crossSection", &cs, "crossSection/D");
+
 
   // gamma data
   events->Branch("gammaMul", &gammaMul, "gammaMul/I");
@@ -486,17 +476,12 @@ printf("getting q vaue, number of states is %i\n", numberOfStates);
   Int_t ignoredState=0; // counter for events which have at least one excited state ignored
 
   for(Int_t i=0; i<info->fNumberEvents; i++){
-
+    
     eventNumber=i; // for the tree
     
     if(i%100000==0){
       printf("Generating event %d (%i requested)\n", i, info->fNumberEvents);
     }
-
-
-
-
-
 
 
 
@@ -518,8 +503,6 @@ printf("getting q vaue, number of states is %i\n", numberOfStates);
       continue;
 
     }
-
-
 
 
 
@@ -598,16 +581,18 @@ printf("getting q vaue, number of states is %i\n", numberOfStates);
     if(info->HaveFrescoFileName()){
 
       // for beam energy profile: get the energy bin number first
-      Int_t energyBin = histCScmFresco2d[0]->GetYaxis()->FindBin(beamE*projA);
+      Int_t energyBin = hist2dCSdOcmFresco[0]->GetYaxis()->FindBin(beamE*projA);
       //printf("Debug: Found bin %d for beam energy %f (maxbins %d)\n", energyBin, beamE*projA, frescoPlotter->GetBeamEnergyBins());
       if(frescoPlotter->GetBeamEnergyBins()-1 < energyBin){
         energyBin=frescoPlotter->GetBeamEnergyBins()-1;
         if(frescoPlotter->GetBeamEnergyBins() > 1){
-          printf("Warning: beam energy %f is not covered by fresco output! Cross section for highest availabe beam energy are used!\n", beamE*projA);
+          //printf("Warning: beam energy %f is not covered by fresco output! Cross section for highest availabe beam energy are used!\n", beamE*projA);
         }
       }
       
-      state=(Int_t)histCSstates[energyBin]->GetRandom();
+      //printf("getting state\n");
+      state=(Int_t)hist1dCSSPstates[energyBin]->GetRandom();
+      //printf("got state %d\n", state);
 
 
       // take theta distribution from fresco output
@@ -624,7 +609,20 @@ printf("getting q vaue, number of states is %i\n", numberOfStates);
       //    abort();
       //  }
       //}
-      lightTheta=histCScmFrescoCut[energyBin][state]->GetRandom();
+
+      //printf("getting theta and cs\n");
+      lightTheta=hist1dCSdTcmFrescoCut[energyBin][state]->GetRandom();
+      Int_t csbin=hist1dCSdTcmFrescoCut[energyBin][state]->GetXaxis()->FindBin(lightTheta);
+      cs=hist1dCSdTcmFrescoCut[energyBin][state]->GetBinContent(csbin);
+      //printf("got theta %f, sin theta %f, cs %f\n", lightTheta, TMath::Sin(lightTheta), cs);
+
+      //if(TMath::IsNaN(lightTheta)){
+      //  printf("integral %f\n", histCScmFrescoCut[energyBin][state]->Integral());
+      //  histCScmFrescoCut[energyBin][state]->Draw();
+      //  //histCSstates[energyBin]->Draw();
+      //  theApp->Run();
+      //}
+
     }else{
 
       if(info->IncludeElastic()){
@@ -635,7 +633,8 @@ printf("getting q vaue, number of states is %i\n", numberOfStates);
 
       // uniform in CM system
       //lightTheta=randomizer->Uniform(TMath::Pi());
-      lightTheta=randomizer->Uniform(info->fAngleMin, info->fAngleMax);
+      //lightTheta=randomizer->Uniform(info->fAngleMin, info->fAngleMax);
+      lightTheta=sinus->GetRandom();
     }
     
     lightThetaCM = lightTheta; // one of them will be boosted, depending on the existence of a fresco file
@@ -862,10 +861,12 @@ printf("getting q vaue, number of states is %i\n", numberOfStates);
     // write histograms
     for(Int_t e=0; e<beamEnergyBins; e++){
       outfile->cd("states");
-      histCSstates[e]->Write(Form("histCSenergy%02dstates", e));
+      hist1dCSSPstates[e]->Write(Form("histCS_SP_energy%02d_states", e));
       for(Int_t s=0; s<numberOfStates+1; s++){
         outfile->cd(Form("state%02d", s));
-//        histCScmFresco[e][s]->Write(Form("histCScmFresco_%02d", e));
+        hist1dCSdOcmFresco[e][s]->Write(Form("histCS_dOmega_Cm_Fresco_%02d", e));
+        hist1dCSdTcmFresco[e][s]->Write(Form("histCS_dTheta_Cm_Fresco_%02d", e));
+        hist1dCSdTcmFrescoCut[e][s]->Write(Form("histCS_dTheta_Cm_Fresco_AngleCut_%02d", e));
 //        histCScmFrescoCut[e][s]->Write(Form("histCScmFrescoCut _%02d", e));
       }
     }
@@ -873,7 +874,8 @@ printf("getting q vaue, number of states is %i\n", numberOfStates);
     // write 2d histograms
     for(Int_t s=0; s<numberOfStates+1; s++){
       outfile->cd();
-      histCScmFresco2d[s]->Write(Form("histCScmFresco2d_%02d", s));
+      hist2dCSdOcmFresco[s]->Write(Form("histCS_dOmega_Cm_Fresco_2d_%02d", s));
+      hist2dCSdTcmFresco[s]->Write(Form("histCS_dTheta_Cm_Fresco_2d_%02d", s));
     }
 
   }

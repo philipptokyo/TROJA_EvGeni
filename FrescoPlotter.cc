@@ -46,6 +46,7 @@ void FrescoPlotter::CreateHistograms(){
         const Int_t arraySize = 200;
         //const Int_t energyBinsMax=20; // in header
         const Float_t deg2rad = TMath::Pi()/180.0;
+        //const Float_t deg2rad = 1.0;
 
         Int_t energyBin=-1, energyBinsFresco=0; // counter for energy bins and its value from fresco file
         Float_t energyMin=0.0;
@@ -360,49 +361,85 @@ void FrescoPlotter::CreateHistograms(){
         Float_t angleMin = angle[0][0][0]*deg2rad;
         Float_t angleMax = (angle[0][0][entry-1]+(angle[0][0][entry-1]-angle[0][0][0])/entry)*deg2rad;
 	
-        //fHistCSelast = new TH1F("CSelast","Cross Sections, elastic scattering", entry, min, max);
-        //for(Int_t e=0; e<entry; e++){
-        //  fHistCSelast->SetBinContent(e+1, crossSection[0][e]);
-        //}
-
 
         for(Int_t e=0; e<energyBin; e++){
           for(Int_t s=0; s<maxNumberOfStates+1; s++){
-            sprintf(cTemp[0], "CSenergy%02dstate%02d", e, s);
+            sprintf(cTemp[0], "CSdO_energy%02d_state%02d", e, s);
             if(s==0){
-              sprintf(cTemp[1], "Cross Sections for beam energy %02d: %f AMeV, elastic scattering", e, fBeamEnergy[e]);
+              sprintf(cTemp[1], "dSigma/dOmega CM for beam energy %02d: %f AMeV, elastic scattering", e, fBeamEnergy[e]);
             }else{
-              sprintf(cTemp[1], "Cross Sections for beam energy %02d: %f AMeV, transfer to state %d", e, fBeamEnergy[e], s);
+              sprintf(cTemp[1], "dSigma/dOmega CM for beam energy %02d: %f AMeV, transfer to state %d", e, fBeamEnergy[e], s);
             }
-            fHistCS[e][s]=new TH1F(cTemp[0] ,cTemp[1] , entry, angleMin, angleMax);
-            fHistCS[e][s]->GetXaxis()->SetTitle("#vartheta_{CM}");
-            fHistCS[e][s]->GetYaxis()->SetTitle("#sigma in mb/sr");
+            fHist1dCSdO[e][s]=new TH1F(cTemp[0] ,cTemp[1] , entry, angleMin, angleMax);
+            fHist1dCSdO[e][s]->GetXaxis()->SetTitle("#vartheta_{CM}");
+            fHist1dCSdO[e][s]->GetYaxis()->SetTitle("d#sigma/d#Omega in mb/sr");
 
             for(Int_t es=0; es<entry; es++){
-              fHistCS[e][s]->SetBinContent(es+1, crossSection[e][s][es]);
+              fHist1dCSdO[e][s]->SetBinContent(es+1, crossSection[e][s][es]);  // ds/dO
             }
+            
+            sprintf(cTemp[0], "CSdT_energy%02d_state%02d", e, s);
+            if(s==0){
+              sprintf(cTemp[1], "dSigma/dTheta CM for beam energy %02d: %f AMeV, elastic scattering", e, fBeamEnergy[e]);
+            }else{
+              sprintf(cTemp[1], "dSigma/dTheta CM for beam energy %02d: %f AMeV, transfer to state %d", e, fBeamEnergy[e], s);
+            }
+            fHist1dCSdT[e][s]=new TH1F(cTemp[0] ,cTemp[1] , entry, angleMin, angleMax);
+            fHist1dCSdT[e][s]->GetXaxis()->SetTitle("#vartheta_{CM}");
+            fHist1dCSdT[e][s]->GetYaxis()->SetTitle("d#sigma/#vartheta in mb/rad");
+
+            for(Int_t es=0; es<entry; es++){
+              //fHist1dCSdT[e][s]->SetBinContent(es+1, crossSection[e][s][es]);  // ds/dO
+              fHist1dCSdT[e][s]->SetBinContent(es+1, crossSection[e][s][es]*TMath::Sin(angle[e][s][es]*deg2rad)*2.0*TMath::Pi()); // ds/dt
+              //if(angle[e][s][es]>0){printf("Angle %f, ds/dO %f, ds/dt %f\n", angle[e][s][es], crossSection[e][s][es], crossSection[e][s][es]*TMath::Sin(angle[e][s][es]*deg2rad));}
+            }
+
           }
         }
 
 
         for(Int_t s=0; s<maxNumberOfStates+1; s++){
-          sprintf(cTemp[0], "CSstate%02d", s);
+          sprintf(cTemp[0], "CSdO_state%02d", s);
           if(s==0){
-            sprintf(cTemp[1], "Cross Sections for elastic scattering");
+            sprintf(cTemp[1], "dSigma/dOmega CM for elastic scattering");
           }else{
-            sprintf(cTemp[1], "Cross Sections for transfer to state %d", s);
+            sprintf(cTemp[1], "dSigma/dOmega CM for transfer to state %d", s);
           }
 
-          fHistCS2d[s] = new TH2F(cTemp[0], cTemp[1], entry, angleMin, angleMax, energyBin, energyMin, energyMax);
+          fHist2dCSdO[s] = new TH2F(cTemp[0], cTemp[1], entry, angleMin, angleMax, energyBin, energyMin, energyMax);
           for(Int_t e=0; e<energyBin; e++){
             for(Int_t es=0; es<entry; es++){
-              Int_t bb=fHistCS2d[s]->GetBin(es, e);
-              fHistCS2d[s]->SetBinContent(bb, crossSection[e][s][es]);
-              fHistCS2d[s]->GetXaxis()->SetTitle("#vartheta_{CM}");
-              fHistCS2d[s]->GetYaxis()->SetTitle("E_{beam} in MeV");
-              fHistCS2d[s]->GetZaxis()->SetTitle("#sigma in mb/sr");
+              Int_t bb=fHist2dCSdO[s]->GetBin(es, e);
+              fHist2dCSdO[s]->SetBinContent(bb, crossSection[e][s][es]);
+              //fHistCS2d[s]->SetBinContent(bb, crossSection[e][s][es]*TMath::Sin(angle[e][s][es]*deg2rad));
+              fHist2dCSdO[s]->GetXaxis()->SetTitle("#vartheta_{CM}");
+              fHist2dCSdO[s]->GetYaxis()->SetTitle("E_{beam} in MeV");
+              fHist2dCSdO[s]->GetZaxis()->SetTitle("d#sigma/d#Omega in mb/sr");
+              //fHistCS2d[s]->GetZaxis()->SetTitle("d#sigma/#vartheta in mb/rad");
             }
           }
+          
+
+          sprintf(cTemp[0], "CSdT_state%02d", s);
+          if(s==0){
+            sprintf(cTemp[1], "dSigma/dTheta CM for elastic scattering");
+          }else{
+            sprintf(cTemp[1], "dSigma/dTheta CM for transfer to state %d", s);
+          }
+
+          fHist2dCSdT[s] = new TH2F(cTemp[0], cTemp[1], entry, angleMin, angleMax, energyBin, energyMin, energyMax);
+          for(Int_t e=0; e<energyBin; e++){
+            for(Int_t es=0; es<entry; es++){
+              Int_t bb=fHist2dCSdT[s]->GetBin(es, e);
+              //fHist2dCSdT[s]->SetBinContent(bb, crossSection[e][s][es]);
+              fHist2dCSdT[s]->SetBinContent(bb, crossSection[e][s][es]*TMath::Sin(angle[e][s][es]*deg2rad)*2.0*TMath::Pi());
+              fHist2dCSdT[s]->GetXaxis()->SetTitle("#vartheta_{CM}");
+              fHist2dCSdT[s]->GetYaxis()->SetTitle("E_{beam} in MeV");
+              //fHist2dCSdT[s]->GetZaxis()->SetTitle("d#sigma/d#Omega in mb/sr");
+              fHist2dCSdT[s]->GetZaxis()->SetTitle("d#sigma/#vartheta in mb/rad");
+            }
+          }
+
         }
 
 
