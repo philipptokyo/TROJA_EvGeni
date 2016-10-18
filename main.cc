@@ -501,7 +501,8 @@ Int_t main(Int_t argc, char **argv){
 
     if(info->Source()){
       
-      lightTheta = randomizer->Uniform(0.0, 180.0)/180.0*TMath::Pi();
+      //lightTheta = randomizer->Uniform(0.0, 180.0)/180.0*TMath::Pi();
+      lightTheta = sinus->GetRandom();
       lightPhi = randomizer->Uniform(0.0, 360.0)/180.0*TMath::Pi();
       state = (Int_t)randomizer->Uniform(info->fSourceLines);
       lightEnergy = info->fSourceEnergies[state];
