@@ -358,8 +358,10 @@ void FrescoPlotter::CreateHistograms(){
 	
 	cout << "Creating Histograms for cross sections" << endl;
 
-        Float_t angleMin = angle[0][0][0]*deg2rad;
-        Float_t angleMax = (angle[0][0][entry-1]+(angle[0][0][entry-1]-angle[0][0][0])/entry)*deg2rad;
+        //Float_t angleMin = angle[0][0][0]*deg2rad;
+        //Float_t angleMax = (angle[0][0][entry-1]+(angle[0][0][entry-1]-angle[0][0][0])/entry)*deg2rad;
+        Float_t angleMin = angle[0][0][0];
+        Float_t angleMax = (angle[0][0][entry-1]+(angle[0][0][entry-1]-angle[0][0][0])/entry);
 	
 
         for(Int_t e=0; e<energyBin; e++){
@@ -491,3 +493,42 @@ void FrescoPlotter::UpdateInput(){
   return;
 
 }
+
+
+
+TGraph* FrescoPlotter::HistCMToGraphLab(TH1F* hist){
+  Float_t beamEnergy = fInfo->fBeamEnergy;
+  return HistCMToGraphLab(hist, beamEnergy);
+}
+
+TGraph* FrescoPlotter::HistCMToGraphLab(TH1F* hist, Float_t beamEnergyMeV){
+  char* massFile = (char*)"/home/philipp/programme/makeEvents/mass.dat";
+
+  Int_t projA=fInfo->fProjA;
+  Int_t projZ=fInfo->fProjZ;
+  Int_t targetA=fInfo->fTargetA;
+  Int_t targetZ=fInfo->fTargetZ;
+  Int_t lightA=fInfo->fLightA;
+  Int_t lightZ=fInfo->fLightZ;
+
+  Nucleus* proj = new Nucleus(projZ, projA-projZ, massFile);
+  Nucleus* targ = new Nucleus(targetZ, targetA-targetZ, massFile);
+  Nucleus* reco = new Nucleus(lightZ, lightA-lightZ, massFile);
+  Nucleus* ejec = new Nucleus(projZ, projA-projZ+(targetA-lightA), massFile);
+
+  Kinematics* reaction = new Kinematics(proj, targ, reco, ejec, beamEnergyMeV, 0.0);
+
+  TGraph* graf = new TGraph();
+
+  for(Int_t b=0; b<hist->GetXaxis()->GetNbins(); b++){
+    Float_t tCm = hist->GetXaxis()->GetBinCenter(b)/180.0*TMath::Pi();
+    Float_t cs = hist->GetBinContent(b);
+
+    Float_t tlab = reaction->Angle_cm2lab(reaction->GetVcm(2), TMath::Pi()-tCm);
+    graf->SetPoint(b, tlab*180.0/TMath::Pi(), cs);
+
+  }
+
+  return graf;
+}
+

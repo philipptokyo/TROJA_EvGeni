@@ -5,6 +5,9 @@
 #include "LibPerso.h"
 
 #include "InputInfo.hh"
+#include "Nucleus.hh"
+#include "Kinematics.hh"
+
 
 // #define maxNumberOfStates 10 // is now defined in InputInfo.hh
 #define energyBinsMax 200
@@ -42,6 +45,9 @@ class FrescoPlotter
   TH2F* Get2DHistogramOmegaState(Int_t s){return fHist2dCSdO[s];}
   TH1F* Get1DHistogramThetaState(Int_t e, Int_t s){return fHist1dCSdT[e][s];}
   TH2F* Get2DHistogramThetaState(Int_t s){return fHist2dCSdT[s];}
+
+  TGraph* HistCMToGraphLab(TH1F* hist);
+  TGraph* HistCMToGraphLab(TH1F* hist, Float_t beamEnergy);
 
   private:
   InputInfo* fInfo;

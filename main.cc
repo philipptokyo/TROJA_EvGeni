@@ -69,6 +69,7 @@ Int_t main(Int_t argc, char **argv){
   TH1F* hist1dCSSPstates[maxBeamEnergyBins]; 
   TH1F* hist1dCSdOcmFresco[maxBeamEnergyBins][maxNumberOfStates+1];
   TH1F* hist1dCSdTcmFresco[maxBeamEnergyBins][maxNumberOfStates+1];
+  TGraph* graf1dCSdTlab[maxBeamEnergyBins][maxNumberOfStates+1];
   TH1F* hist1dCSdTcmFrescoCut[maxBeamEnergyBins][maxNumberOfStates+1];
   TH2F* hist2dCSdOcmFresco[maxNumberOfStates+1];
   TH2F* hist2dCSdTcmFresco[maxNumberOfStates+1];
@@ -99,8 +100,8 @@ Int_t main(Int_t argc, char **argv){
     binL = hist1dCSdOcmFresco[0][0]->GetXaxis()->GetBinLowEdge(0);
     binU = hist1dCSdOcmFresco[0][0]->GetXaxis()->GetBinUpEdge(binN);
 
-    Int_t binF=hist1dCSdOcmFresco[0][0]->FindBin(info->fAngleMin); // cut from bin
-    Int_t binT=hist1dCSdOcmFresco[0][0]->FindBin(info->fAngleMax); // cut to bin
+    Int_t binF=hist1dCSdOcmFresco[0][0]->FindBin(info->fAngleMin*180.0/TMath::Pi()); // cut from bin
+    Int_t binT=hist1dCSdOcmFresco[0][0]->FindBin(info->fAngleMax*180.0/TMath::Pi()); // cut to bin
 
      
 
@@ -128,6 +129,15 @@ Int_t main(Int_t argc, char **argv){
         }else if(h>0){
           //histCSstates->SetBinContent(h+1, histCScmFresco[h]->Integral(binF, binT));
           hist1dCSSPstates[e]->SetBinContent(h+1, TMath::Pi()/180.0* hist1dCSdTcmFresco[e][h]->Integral(0, binN));
+
+          //graf1dCSdTlab[e][h] = new TGraph();
+          graf1dCSdTlab[e][h] = frescoPlotter->HistCMToGraphLab(hist1dCSdTcmFresco[e][h], frescoPlotter->GetBeamEnergyMeV(e));
+
+          //if(frescoPlotter->GetBeamEnergyAMeV(e)>10.0){
+          //  graf1dCSdTlab[e][h]->Draw("A*C");
+          //  theApp->Run();
+          //}
+
         }
   
         for(Int_t b=0; b<binN; b++){
@@ -135,6 +145,7 @@ Int_t main(Int_t argc, char **argv){
             hist1dCSdTcmFrescoCut[e][h]->SetBinContent(b, 0.0);
           }
         }
+
   
       }
 
@@ -256,8 +267,9 @@ Int_t main(Int_t argc, char **argv){
       reaction[s] = new Kinematics(proj, targ, reco, ejec, beamE*projA, stateEnergy[s]);
       //printf("state energy %d: %f\n", s, stateEnergy[s]);
   }
-printf("maxNumberOfStates = %d\n", maxNumberOfStates);
-printf("getting q vaue, number of states is %i\n", numberOfStates);
+  
+  //printf("maxNumberOfStates = %d\n", maxNumberOfStates);
+  //printf("getting q vaue, number of states is %i\n", numberOfStates);
   qValue=reaction[1]->GetQValue();
   
    
@@ -614,11 +626,12 @@ printf("getting q vaue, number of states is %i\n", numberOfStates);
       lightTheta=hist1dCSdTcmFrescoCut[energyBin][state]->GetRandom();
       Int_t csbin=hist1dCSdTcmFrescoCut[energyBin][state]->GetXaxis()->FindBin(lightTheta);
       cs=hist1dCSdTcmFrescoCut[energyBin][state]->GetBinContent(csbin);
+      lightTheta*=TMath::Pi()/180.0;
       //printf("got theta %f, sin theta %f, cs %f\n", lightTheta, TMath::Sin(lightTheta), cs);
 
       //if(TMath::IsNaN(lightTheta)){
       //  printf("integral %f\n", histCScmFrescoCut[energyBin][state]->Integral());
-      //  histCScmFrescoCut[energyBin][state]->Draw();
+      //  hist1dCSdTcmFrescoCut[energyBin][state]->Draw();
       //  //histCSstates[energyBin]->Draw();
       //  theApp->Run();
       //}
@@ -868,6 +881,7 @@ printf("getting q vaue, number of states is %i\n", numberOfStates);
         hist1dCSdTcmFresco[e][s]->Write(Form("histCS_dTheta_Cm_Fresco_%02d", e));
         hist1dCSdTcmFrescoCut[e][s]->Write(Form("histCS_dTheta_Cm_Fresco_AngleCut_%02d", e));
 //        histCScmFrescoCut[e][s]->Write(Form("histCScmFrescoCut _%02d", e));
+        if(s>0){graf1dCSdTlab[e][s]->Write(Form("graphCS_dTheta_Lab_Fresco_%02d", e));}
       }
     }
     
