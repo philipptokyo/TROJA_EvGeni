@@ -111,11 +111,14 @@ Int_t main(Int_t argc, char **argv){
 
 
 
+      printf("Creating single-particle cross section histograms\n");
       for(Int_t e=0; e<beamEnergyBins; e++){
-        sprintf(tmp1, "histCSSP_energy%02d_states", e);
-        sprintf(tmp2, "Integrated SP cross sections vs. state for beam energy %f MeV (%f AMeV)", frescoPlotter->GetBeamEnergyMeV(e), frescoPlotter->GetBeamEnergyAMeV(e));
-        hist1dCSSPstates[e] = new TH1F(tmp1, tmp2, numberOfStates+1, 0, numberOfStates+1);
-      
+
+        if(h==0){
+          sprintf(tmp1, "histCSSP_energy%02d_states", e);
+          sprintf(tmp2, "Integrated SP cross sections vs. state for beam energy %f MeV (%f AMeV)", frescoPlotter->GetBeamEnergyMeV(e), frescoPlotter->GetBeamEnergyAMeV(e));
+          hist1dCSSPstates[e] = new TH1F(tmp1, tmp2, numberOfStates+1, 0, numberOfStates+1);
+        }
         hist1dCSdOcmFresco[e][h] = frescoPlotter->Get1DHistogramOmegaState(e, h);
         hist1dCSdTcmFresco[e][h] = frescoPlotter->Get1DHistogramThetaState(e, h);
         hist1dCSdTcmFrescoCut[e][h] = (TH1F*)hist1dCSdTcmFresco[e][h]->Clone();
@@ -148,6 +151,7 @@ Int_t main(Int_t argc, char **argv){
 
   
       }
+      printf("done\n");
 
 
     }
@@ -219,6 +223,8 @@ Int_t main(Int_t argc, char **argv){
   TRandom3 *randomizer=new TRandom3();  
   randomizer->SetSeed(0);
   TF1 *sinus = new TF1("sinus","sin(x)",0,TMath::Pi()); 
+  //TF1 *sinus = new TF1("sinus","sin(x)",0, TMath::Pi()/2.0); // only in forward direction
+  //TF1 *sinus = new TF1("sinus","sin(x)",0, TMath::Pi()/10.0); // only in very forward direction
 
   Int_t projA=info->fProjA;
   Int_t projZ=info->fProjZ;
@@ -608,21 +614,6 @@ Int_t main(Int_t argc, char **argv){
       //printf("got state %d\n", state);
 
 
-      // take theta distribution from fresco output
-      // todo: beam energy profile needs to be taken into account!
-      //lightTheta=histCScmFresco[state]->GetRandom();
-      //lightTheta=-1.0;
-
-      //Int_t counter=0;
-      //while((lightTheta<info->fAngleMin) || (lightTheta>info->fAngleMax)){
-      //  lightTheta=histCScmFrescoCut[state]->GetRandom();
-      //  counter++;
-      //  if(counter>10000){
-      //    printf("Error in while loop for obtaining theta! More than 10k tries! Please check!\n");
-      //    abort();
-      //  }
-      //}
-
       //printf("getting theta and cs\n");
       lightTheta=hist1dCSdTcmFrescoCut[energyBin][state]->GetRandom();
       Int_t csbin=hist1dCSdTcmFrescoCut[energyBin][state]->GetXaxis()->FindBin(lightTheta);
@@ -711,7 +702,6 @@ Int_t main(Int_t argc, char **argv){
     char lightPdgIdName[20];
     sprintf(lightPdgIdName,"1000%02d%03d0", z, a);
     lightPdgId=atoi(lightPdgIdName);
-
 
 
     histCScm->Fill(lightThetaCM);
