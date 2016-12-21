@@ -103,7 +103,9 @@ Int_t main(Int_t argc, char **argv){
     Int_t binF=hist1dCSdOcmFresco[0][0]->FindBin(info->fAngleMin*180.0/TMath::Pi()); // cut from bin
     Int_t binT=hist1dCSdOcmFresco[0][0]->FindBin(info->fAngleMax*180.0/TMath::Pi()); // cut to bin
 
-     
+    //Float_t specFact[5]={1.0, 0.24, 0.36, 0.02, 2.5}; // 57Cr states, 0=elastic     
+    Float_t specFact[5]={1.0, 0.44, 0.54, 0.04, 0.45}; // 57Cr states, 0=elastic     
+    //Float_t specFact[5]={1.0, 1.0, 1.0, 1.0, 1.0};   
 
     for(Int_t h=0; h<numberOfStates+1; h++){
       hist2dCSdOcmFresco[h] = frescoPlotter->Get2DHistogramOmegaState(h);
@@ -131,7 +133,7 @@ Int_t main(Int_t argc, char **argv){
           //printf("Histogram %d: integral from %f (bin %d) to %f (bin%d) is %f\n", h, info->fAngleMin, bin1, info->fAngleMax, bin2, histCScmFresco[h]->Integral(bin1, bin2));
         }else if(h>0){
           //histCSstates->SetBinContent(h+1, histCScmFresco[h]->Integral(binF, binT));
-          hist1dCSSPstates[e]->SetBinContent(h+1, TMath::Pi()/180.0* hist1dCSdTcmFresco[e][h]->Integral(0, binN));
+          hist1dCSSPstates[e]->SetBinContent(h+1, TMath::Pi()/180.0* hist1dCSdTcmFresco[e][h]->Integral(0, binN) * specFact[h]); // todo: spec fact in input file!!!!!
 
           //graf1dCSdTlab[e][h] = new TGraph();
           graf1dCSdTlab[e][h] = frescoPlotter->HistCMToGraphLab(hist1dCSdTcmFresco[e][h], frescoPlotter->GetBeamEnergyMeV(e));
@@ -225,6 +227,7 @@ Int_t main(Int_t argc, char **argv){
   TF1 *sinus = new TF1("sinus","sin(x)",0,TMath::Pi()); 
   //TF1 *sinus = new TF1("sinus","sin(x)",0, TMath::Pi()/2.0); // only in forward direction
   //TF1 *sinus = new TF1("sinus","sin(x)",0, TMath::Pi()/10.0); // only in very forward direction
+  //TF1 *sinus = new TF1("sinus","sin(x)",0, 0.0001); // only in most forward direction
 
   Int_t projA=info->fProjA;
   Int_t projZ=info->fProjZ;
@@ -378,7 +381,8 @@ Int_t main(Int_t argc, char **argv){
 
   Int_t state=0; // aux, which state is populated
   Float_t excEn=0.0, missMass=0.0; // for cross checks with analysis code
-
+  
+  Double_t lightP[3], lightPtot, targetP[3], targetPtot, beamP[3], beamPtot, heavyP[3], heavyPtot;
   
   // gamma variables
   const Int_t maxGammas = 2;
@@ -400,6 +404,11 @@ Int_t main(Int_t argc, char **argv){
   events->Branch("lightTheta",&lightTheta, "lightTheta/D");
   events->Branch("lightThetaCM",&lightThetaCM, "lightThetaCM/D");
   events->Branch("lightPhi",&lightPhi, "lightPhi/D");
+  events->Branch("lightPhi",&lightPhi, "lightPhi/D");
+  events->Branch("lightP",&lightP, "lightP[3]/D");
+  events->Branch("lightPtot",&lightPtot, "lightPtot/D");
+  events->Branch("targetP",&targetP, "targetP[3]/D");
+  events->Branch("targetPtot",&targetPtot, "targetPtot/D");
   
   // projectile data
   events->Branch("beamEnergy", &beamE, "beamEnergy/F");
@@ -410,6 +419,10 @@ Int_t main(Int_t argc, char **argv){
   events->Branch("beamB", &beamB, "beamB/F");
   events->Branch("beamTheta", &beamTheta, "beamTheta/F");
   events->Branch("beamPhi", &beamPhi, "beamPhi/F");
+  events->Branch("beamP",&beamP, "beamP[3]/D");
+  events->Branch("beamPtot",&beamPtot, "beamPtot/D");
+  events->Branch("heavyP",&heavyP, "heavyP[3]/D");
+  events->Branch("heavyPtot",&heavyPtot, "heavyPtot/D");
   events->Branch("state", &state, "state/I");
   events->Branch("excitationEnergy", &excEn, "excitationEnergy/F");
   events->Branch("missingMass", &missMass, "missingMass/F");
@@ -509,13 +522,18 @@ Int_t main(Int_t argc, char **argv){
       
       //lightTheta = randomizer->Uniform(0.0, 180.0)/180.0*TMath::Pi();
       lightTheta = sinus->GetRandom();
+      //lightTheta = 0.0;
       lightPhi = randomizer->Uniform(0.0, 360.0)/180.0*TMath::Pi();
       state = (Int_t)randomizer->Uniform(info->fSourceLines);
       lightEnergy = info->fSourceEnergies[state];
 
-      beamX = randomizer->Uniform(-2.0, 2.0);
-      beamY = randomizer->Uniform(-2.0, 2.0);
-      beamZ = randomizer->Uniform(-0.0005, 0.0005);
+      beamX = 0.0; 
+      beamY = 0.0; 
+      beamZ = 0.0; 
+      //beamX = randomizer->Uniform(-2.0, 2.0);
+      //beamY = randomizer->Uniform(-2.0, 2.0);
+      //beamZ = randomizer->Uniform(-0.0005, 0.0005);
+
 
       events->Fill();
 
@@ -579,6 +597,7 @@ Int_t main(Int_t argc, char **argv){
     beamPhi=vBeam.Phi();
 
 
+//beamE-=5.0; // hack for testing only
 
 
   // this is actually deprecated: 
@@ -784,6 +803,10 @@ Int_t main(Int_t argc, char **argv){
     Float_t cmEnergy = TMath::Sqrt(projMass*projMass + targetMass*targetMass + 2.0*targetMass*(projMass*projGamma));
     
     TVector3 cmV(0.0, 0.0, cmBeta);
+    cmV.RotateY(beamA/1000.0);
+    cmV.RotateX(beamB/1000.0);
+    
+    
     TVector3 lightV(0.0, 0.0, 1.0);
     lightV.SetMagThetaPhi(lightMomentum, lightTheta, lightPhi);
     TLorentzVector lightL(0.0, 0.0, 0.0, 1.0);
@@ -795,15 +818,62 @@ Int_t main(Int_t argc, char **argv){
 
     TLorentzVector heavyL;
     heavyL.SetVect(-lightL.Vect());
-    heavyL.SetE(cmEnergy - lightL.E());
+    heavyL.SetE(cmEnergy - lightL.E() + heavyMass);
+
+    lightP[0]=lightL.Px();
+    lightP[1]=lightL.Py();
+    lightP[2]=lightL.Pz();
+    lightPtot=TMath::Sqrt(lightP[0]*lightP[0] + lightP[1]*lightP[1] + lightP[2]*lightP[2]);
+    heavyP[0]=heavyL.Px();
+    heavyP[1]=heavyL.Py();
+    heavyP[2]=heavyL.Pz();
+    heavyPtot=TMath::Sqrt(heavyP[0]*heavyP[0] + heavyP[1]*heavyP[1] + heavyP[2]*heavyP[2]);
+    
+    TVector3 projV(0,0,1.0);
+    projV.RotateY(beamA/1000.0);
+    projV.RotateX(beamB/1000.0);
+
+    TLorentzVector projL(0.0, 0.0, 0.0, 1.0);
+    projL.SetVect(projV);
+    projL.SetE(beamE * (Float_t)projA + projMass);
+    
+    
+//    beamP[0]=projL.Px();
+//    beamP[1]=projL.Py();
+//    beamP[2]=projL.Pz();
+//    beamPtot=TMath::Sqrt(beamP[0]*beamP[0] + beamP[1]*beamP[1] + beamP[2]*beamP[2]);
+//printf("\nbefore boost: beamPtot %lf, beamE * (Float_t)projA + projMass %f, projL.E() %f\n", beamPtot, beamE * (Float_t)projA + projMass, projL.E());
+    
+    projL.Boost(cmV);
+
+    beamP[0]=projL.Px();
+    beamP[1]=projL.Py();
+    beamP[2]=projL.Pz();
+    beamPtot=TMath::Sqrt(beamP[0]*beamP[0] + beamP[1]*beamP[1] + beamP[2]*beamP[2]);
+
+    TLorentzVector targetL(0.0, 0.0, 0.0, 1.0);
+    targetL.SetVect(-projV);
+    targetL.SetE(targetMass);
+    targetL.Boost(cmV);
+
+    targetP[0]=targetL.Px();
+    targetP[1]=targetL.Py();
+    targetP[2]=targetL.Pz();
+    targetPtot=TMath::Sqrt(targetP[0]*targetP[0] + targetP[1]*targetP[1] + targetP[2]*targetP[2]);
+
+//printf("cmEnergy %f, lightPtot %lf, targetPtot %lf, beamPtot %lf, heavyPtot %lf\n", cmEnergy, lightPtot, targetPtot, beamPtot, heavyPtot);
 
     missMass = -heavyL.M()+heavyMass;
+
+    //missMass = -heavyL.M()+heavyMass;
+    missMass = -heavyL.M();
     
     if(info->AddGammas()){
       // generate gamma
       if(state>1){
         gammaMul=1;
-        gammaThetaRest[0]=randomizer->Uniform(0, TMath::Pi());
+        //gammaThetaRest[0]=randomizer->Uniform(0, TMath::Pi());
+        gammaThetaRest[0]=sinus->GetRandom();
         gammaPhiRest[0]=randomizer->Uniform(-TMath::Pi(), TMath::Pi());
         gammaERest[0]=stateEnergy[state];
 
