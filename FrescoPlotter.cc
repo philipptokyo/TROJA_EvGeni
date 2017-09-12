@@ -237,6 +237,9 @@ void FrescoPlotter::CreateHistograms(){
                   }
 
                   while(strcmp(cTemp[0],"************************************************************************************************************************************")!=0){
+
+                    sprintf(cTemp[1]," ");
+
                     getline(fin,line);
                     std::istringstream iss3(line);
                     for(Int_t i=0; i<columns; i++){
@@ -248,8 +251,13 @@ void FrescoPlotter::CreateHistograms(){
 
 
                     if((strcmp(cTemp[1],"J=")==0) && (strcmp(cTemp[4],"E=")==0)){
+                      //printf("Line: %s\n", line.c_str());
                       fStateEnergy[atoi(cTemp[0])] = atof(cTemp[5]); 
-                        printf("Found state %d with energy %f\n", atoi(cTemp[0]), fStateEnergy[atoi(cTemp[0])]);
+                      printf("Found state %d with energy %f\n", atoi(cTemp[0]), fStateEnergy[atoi(cTemp[0])]);
+                    }else if((strcmp(cTemp[1],"J=")==0) && (strcmp(cTemp[5],"E=")==0)){ // for positive parity states "E=" is [5]
+                      //printf("Line: %s\n", line.c_str());
+                      fStateEnergy[atoi(cTemp[0])] = atof(cTemp[6]);
+                      printf("Found state %d with energy %f\n", atoi(cTemp[0]), fStateEnergy[atoi(cTemp[0])]);
                     }
 
 

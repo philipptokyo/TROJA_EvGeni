@@ -103,9 +103,10 @@ Int_t main(Int_t argc, char **argv){
     Int_t binF=hist1dCSdOcmFresco[0][0]->FindBin(info->fAngleMin*180.0/TMath::Pi()); // cut from bin
     Int_t binT=hist1dCSdOcmFresco[0][0]->FindBin(info->fAngleMax*180.0/TMath::Pi()); // cut to bin
 
+    //Float_t specFact[5]={1.0, 1.0, 1.0, 1.0, 1.0};  // dummy
     //Float_t specFact[5]={1.0, 0.24, 0.36, 0.02, 2.5}; // 57Cr states, 0=elastic     
-    Float_t specFact[5]={1.0, 0.44, 0.54, 0.04, 0.45}; // 57Cr states, 0=elastic     
-    //Float_t specFact[5]={1.0, 1.0, 1.0, 1.0, 1.0};   
+    //Float_t specFact[5]={1.0, 0.44, 0.54, 0.04, 0.45}; // 53Ti states, 0=elastic     
+    Float_t specFact[5]={1.0, 0.48, 0.89, 0.84, 0.30}; // 50Ca states, 0=elastic     
 
     for(Int_t h=0; h<numberOfStates+1; h++){
       hist2dCSdOcmFresco[h] = frescoPlotter->Get2DHistogramOmegaState(h);
@@ -555,6 +556,8 @@ Int_t main(Int_t argc, char **argv){
       // shortened oedo sim file contains only good events
       Int_t rndmEvnt = (Int_t)randomizer->Uniform(beamNoEvents);
       treeBeamProfile->GetEvent(rndmEvnt);
+
+//beamE=randomizer->Uniform(10.0, 15.0);
 
     }else{ // no beam profile
       
