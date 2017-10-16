@@ -415,8 +415,13 @@ void FrescoPlotter::CreateHistograms(){
           }else{
             sprintf(cTemp[1], "dSigma/dOmega CM for transfer to state %d", s);
           }
-
           fHist2dCSdO[s] = new TH2F(cTemp[0], cTemp[1], entry, angleMin, angleMax, energyBin, energyMin, energyMax);
+          
+          
+          sprintf(cTemp[0], "CSdOxE_state%02d", s);
+          fHist2dCSdOxE[s] = new TH2F(cTemp[0], cTemp[1], entry*2, angleMin*TMath::Sqrt(energyMin), angleMax*TMath::Sqrt(energyMax), energyBin, energyMin, energyMax);
+          
+          
           for(Int_t e=0; e<energyBin; e++){
             for(Int_t es=0; es<entry; es++){
               Int_t bb=fHist2dCSdO[s]->GetBin(es, e);
@@ -426,6 +431,12 @@ void FrescoPlotter::CreateHistograms(){
               fHist2dCSdO[s]->GetYaxis()->SetTitle("E_{beam} in MeV");
               fHist2dCSdO[s]->GetZaxis()->SetTitle("d#sigma/d#Omega in mb/sr");
               //fHistCS2d[s]->GetZaxis()->SetTitle("d#sigma/#vartheta in mb/rad");
+              
+              bb=fHist2dCSdOxE[s]->GetBin(es*TMath::Sqrt(e), e);
+              fHist2dCSdOxE[s]->SetBinContent(bb, crossSection[e][s][es]);
+              fHist2dCSdOxE[s]->GetXaxis()->SetTitle("#vartheta_{CM} x #sqrtE");
+              fHist2dCSdOxE[s]->GetYaxis()->SetTitle("E_{beam} in MeV");
+              fHist2dCSdOxE[s]->GetZaxis()->SetTitle("d#sigma/d#Omegain mb/sr");
             }
           }
           
@@ -438,6 +449,10 @@ void FrescoPlotter::CreateHistograms(){
           }
 
           fHist2dCSdT[s] = new TH2F(cTemp[0], cTemp[1], entry, angleMin, angleMax, energyBin, energyMin, energyMax);
+          
+          sprintf(cTemp[0], "CSdTxE_state%02d", s);
+          fHist2dCSdTxE[s] = new TH2F(cTemp[0], cTemp[1], entry*2, angleMin*TMath::Sqrt(energyMin), angleMax*TMath::Sqrt(energyMax), energyBin, energyMin, energyMax);
+          
           for(Int_t e=0; e<energyBin; e++){
             for(Int_t es=0; es<entry; es++){
               Int_t bb=fHist2dCSdT[s]->GetBin(es, e);
@@ -447,6 +462,12 @@ void FrescoPlotter::CreateHistograms(){
               fHist2dCSdT[s]->GetYaxis()->SetTitle("E_{beam} in MeV");
               //fHist2dCSdT[s]->GetZaxis()->SetTitle("d#sigma/d#Omega in mb/sr");
               fHist2dCSdT[s]->GetZaxis()->SetTitle("d#sigma/#vartheta in mb/rad");
+              
+              bb=fHist2dCSdTxE[s]->GetBin(es*TMath::Sqrt(e), e);
+              fHist2dCSdTxE[s]->SetBinContent(bb, crossSection[e][s][es]*TMath::Sin(angle[e][s][es]*deg2rad)*2.0*TMath::Pi());
+              fHist2dCSdTxE[s]->GetXaxis()->SetTitle("#vartheta_{CM} x #sqrtE");
+              fHist2dCSdTxE[s]->GetYaxis()->SetTitle("E_{beam} in MeV");
+              fHist2dCSdTxE[s]->GetZaxis()->SetTitle("d#sigma/#vartheta in mb/rad");
             }
           }
 

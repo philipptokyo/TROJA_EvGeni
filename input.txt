@@ -1,67 +1,70 @@
 // input example for makeEvents
 
 
-//output_textfile_fresco /home/philipp/programme/fresco_input/52Ti_10.0.out
-//output_textfile_fresco /home/philipp/programme/fresco_input/52Ti_exp.out
-output_textfile_fresco /home/philipp/programme/fresco_input/52Ti_dL_evar.out
+//output_textfile_fresco /home/philipp/programme/fresco_input/50Ca10.0AMeV.out
+//output_textfile_fresco /home/philipp/programme/fresco_input/50Ca_evar.out
+//output_textfile_fresco /home/philipp/programme/fresco_input/50Ca_dl_evar.out
+output_textfile_fresco /home/philipp/programme/fresco_input/50Ca_shmo_evar.out
+
+output_textfile_pace /home/philipp/programme/pace4_test/pace4_fusion.txt
+pace_only
 
 //fresco_header_only
 generate_gammas
 
-output_rootfile_makeEvents /mnt/raid/OEDO/philipp/events/52Ti_mom_test.root
-output_rootfile_troja /mnt/raid/OEDO/philipp/geant/52Ti_mom_test.root
-output_rootfile_analysis /mnt/raid/OEDO/philipp/analysis/52Ti_mom_test.root
+output_rootfile_makeEvents /mnt/raid/OEDO/philipp/events/50Ca_pace.root
+output_rootfile_troja /mnt/raid/OEDO/philipp/geant/50Ca_pace.root
+output_rootfile_analysis /mnt/raid/OEDO/philipp/analysis/50Ca_pace.root
 
 //input_textfile_geometry /home/philipp/programme/doAll/detector_geometry.txt
 //input_textfile_geometry /home/philipp/programme/doAll/detector_geometry_troja3.txt
 //input_textfile_geometry /home/philipp/programme/doAll/detector_geometry_sharc.txt
 //input_textfile_geometry /home/philipp/programme/doAll/detector_geometry_sharc_manyPixels.txt
 //input_textfile_geometry /home/philipp/sim/troja/detector_geometry.txt
-input_textfile_geometry /home/philipp/programme/doAll/detector_geometry_m2r.txt
+input_textfile_geometry /home/philipp/programme/doAll/detector_geometry_m2r_enResGET.txt
 
 // give the root file with oedo beam profile
 //beam_profile_file_oedo /mnt/raid/OEDO/OEDO_Matsushita/132Sn/3rd_order/oedo_132sn_10MeV.root
 beam_profile_file_oedo /mnt/raid/OEDO/OEDO_Matsushita/132Sn/3rd_order/oedo_132sn_10MeV_short.root
-//beam_profile_file_oedo /mnt/raid/OEDO/philipp/beam_profiles/52Ti_bp.root
+//beam_profile_file_oedo /mnt/raid/OEDO/philipp/beam_profiles/56Cr_bp.root
 
 dE-E_cut_file_type_name 1 /home/philipp/analysis/troja/cut_dummy.root
-//dE-E_cut_file_type_name 1 /home/philipp/analysis/troja/cuts_dp.root
 
 // number of events to generate
 // default 100, if nothing is set
-number_events 100000
+number_events 1000
 
-projectile_A 52
-projectile_Z 22
+projectile_A 50
+projectile_Z 20
 target_A 2
 target_Z 1
 light_A 1
 light_Z 1 //outgoing Z needs to be equal to target Z, a.t.m. !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-states 1 0.0 
-//states 3 0.0 1.237 1.576
+//states 1 0.0 
+states 4 0.0 1.55 3.59 3.94 
 //theta_range_CM 0.0 70.0
 //include_elastic_downscaled 0.0
 
 // beam energy per nucleon in MeV/u
 // default is 10.0 MeV/u
-beam_energy 10.0
+beam_energy 15.0
 
 
 // choose what should be taken from beam profile file
-beam_profile_energy
+//beam_profile_energy
 //beam_profile_position_x
 //beam_profile_position_y
 //beam_profile_angular_a
 //beam_profile_angular_b
-//
-////no_beam_tracking
-//
-////// for analysis:
-//resolution_target_x 0.8 // mm
-//resolution_target_y 0.8
-//resolution_target_z 0.0
-//resolution_target_a 1.2 // mrad
-//resolution_target_b 1.2
-//resolution_beam_e 2.1  // MeV 
+
+//no_beam_tracking
+
+//// for analysis:
+resolution_target_x 1.1 // mm
+resolution_target_y 1.1
+resolution_target_z 0.0
+resolution_target_a 1.1 // mrad
+resolution_target_b 1.1
+resolution_beam_e 5.0  // MeV 
 
 

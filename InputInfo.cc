@@ -18,6 +18,11 @@ InputInfo::InputInfo(){
   //fMaxExEnergy=0.0;
   for(Int_t s=0; s<maxNumberOfStates+1; s++){
     fStateEnergy[s]=0.0;
+    fStateSpecFact[s]=1.0;
+    fStateGammaMul[s]=0;
+    for(Int_t ss=0; ss<maxNumberOfStates+1; ss++){
+      fStateGammaEnergies[s][ss]=0.0;
+    }
   }
   fBeamEnergy=10.0; // in MeV/u
   
@@ -29,6 +34,8 @@ InputInfo::InputInfo(){
   fHaveOedoSimFileName=false;
   fHaveFrescoFileName=false;
   fFrescoHeaderOnly=false;
+  fHavePaceFileName=false;
+  fPaceOnly=false;
   fSource=false;
   
   fProfileE=false;	
@@ -130,6 +137,15 @@ void InputInfo::parse(char filename[100]){
       fFrescoHeaderOnly = true;
       cout << "Only Header information is taken from fresco file " << endl;
     }
+    else if(strcmp(temp[0],"output_textfile_pace")==0)  {
+      strcpy(fOutFileNamePace,temp[1]);
+      fHavePaceFileName = true;
+      cout << "Output file of pace is '" << fOutFileNamePace << "'" << endl;
+    }
+    else if(strcmp(temp[0],"pace_only")==0)  {
+      fPaceOnly = true;
+      cout << "Only pace protons will be simulated " << endl;
+    }
     else if(strcmp(temp[0],"output_rootfile_makeEvents")==0){
       strcpy(fOutFileNameMakeEvents,temp[1]);
       cout << "Output file of makeEvents is '" << fOutFileNameMakeEvents << "'" << endl;
@@ -198,6 +214,19 @@ void InputInfo::parse(char filename[100]){
       for(Int_t s=0; s<fNumberOfStates; s++){
         fStateEnergy[s+1]=atof(temp[2+s]);
         cout << "State " << s+1 << " at energy " << fStateEnergy[s+1] << " MeV, ";
+      }
+      cout << endl;
+    }
+    else if(strcmp(temp[0],"spectroscopic_factors")==0){
+      ////fNumberOfStates=atof(temp[1]);
+      ////cout << "Number of states in heavy ejectile is set to " << fNumberOfStates << endl;
+      //for(Int_t s=0; s<fNumberOfStates; s++){
+      //  fStateSpecFact[s+1]=atof(temp[1+s]);
+      //  cout << "State " << s+1 << " with spectroscopic factor " << fStateSpecFact[s+1] << ", ";
+      //}
+      for(Int_t s=0; s<fNumberOfStates+1; s++){
+        fStateSpecFact[s]=atof(temp[s+1]);
+        cout << "State " << s << " with spectroscopic factor " << fStateSpecFact[s] << ", ";
       }
       cout << endl;
     }
@@ -298,6 +327,16 @@ void InputInfo::parse(char filename[100]){
     else if(strcmp(temp[0],"generate_gammas")==0){
       fAddGammas=true;
       cout << "Adding gammas in event generator" << endl;
+    }
+    else if(strcmp(temp[0],"gammas")==0){
+      Int_t gstate = atoi(temp[1]);
+      fStateGammaMul[gstate]=atoi(temp[2]);
+      cout << "Level " << gstate << ": " << fStateGammaMul[gstate] << " gammas with energies ";
+      for(Int_t gmul=0; gmul<fStateGammaMul[gstate]; gmul++){
+        fStateGammaEnergies[gstate][gmul] = atof(temp[3+gmul]);
+        cout << fStateGammaEnergies[gstate][gmul] << " MeV, ";
+      }
+      cout << endl;
     }
     else if(strcmp(temp[0],"source")==0){
       fSource=true;

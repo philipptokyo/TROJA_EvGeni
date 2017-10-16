@@ -43,8 +43,10 @@ class FrescoPlotter
   //TH1F* GetHistogramElastic(){return fHistCSelast;}
   TH1F* Get1DHistogramOmegaState(Int_t e, Int_t s){return fHist1dCSdO[e][s];}
   TH2F* Get2DHistogramOmegaState(Int_t s){return fHist2dCSdO[s];}
+  TH2F* Get2DHistogramOmegaxEState(Int_t s){return fHist2dCSdOxE[s];}
   TH1F* Get1DHistogramThetaState(Int_t e, Int_t s){return fHist1dCSdT[e][s];}
   TH2F* Get2DHistogramThetaState(Int_t s){return fHist2dCSdT[s];}
+  TH2F* Get2DHistogramThetaxEState(Int_t s){return fHist2dCSdTxE[s];}
 
   TGraph* HistCMToGraphLab(TH1F* hist);
   TGraph* HistCMToGraphLab(TH1F* hist, Float_t beamEnergy);
@@ -64,8 +66,10 @@ class FrescoPlotter
   //TH1F *fHistCSelast;
   TH1F *fHist1dCSdO[energyBinsMax][maxNumberOfStates+1]; // dSigma/dOmega in CM
   TH2F *fHist2dCSdO[maxNumberOfStates+1];
+  TH2F *fHist2dCSdOxE[maxNumberOfStates+1];
   TH1F *fHist1dCSdT[energyBinsMax][maxNumberOfStates+1]; // dSigma/dTheta*2pi in CM
   TH2F *fHist2dCSdT[maxNumberOfStates+1];
+  TH2F *fHist2dCSdTxE[maxNumberOfStates+1];
 
 
 };

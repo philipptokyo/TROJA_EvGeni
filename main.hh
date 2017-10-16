@@ -5,6 +5,7 @@
 #include "LibPerso.h"
 
 #include "InputInfo.hh"
+#include "PacePlotter.hh"
 
 Int_t main(Int_t argc, char **argv);
 

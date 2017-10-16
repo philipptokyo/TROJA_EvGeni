@@ -15,6 +15,7 @@
 #include "Kinematics.hh"
 #include "LibPerso.h"
 #include "FrescoPlotter.hh"
+#include "PacePlotter.hh"
 
 using namespace std;
 
@@ -72,10 +73,26 @@ Int_t main(Int_t argc, char **argv){
   TGraph* graf1dCSdTlab[maxBeamEnergyBins][maxNumberOfStates+1];
   TH1F* hist1dCSdTcmFrescoCut[maxBeamEnergyBins][maxNumberOfStates+1];
   TH2F* hist2dCSdOcmFresco[maxNumberOfStates+1];
+  TH2F* hist2dCSdOcmxEFresco[maxNumberOfStates+1];
   TH2F* hist2dCSdTcmFresco[maxNumberOfStates+1];
+  TH2F* hist2dCSdTcmxEFresco[maxNumberOfStates+1];
   //TH2F* histCScmFresco2dCut[maxNumberOfStates+1];
   TH2F* histETh = new TH2F("histETh", "Energy vs. Theta_lab", 360, 0, 180, 200, 0, 100);
   
+  TH1D* hist1dCSdOlabdegPace;
+  TH2D* histEThdegPace;
+  PacePlotter* pace = new PacePlotter();
+  if(info->HavePaceFileName()){
+    pace->parse(info->fOutFileNamePace);
+    hist1dCSdOlabdegPace = pace->MakeCSHist();
+    histEThdegPace = pace->Make2DHist();
+  }
+
+  //histEThdegPace->Draw("colz");
+  //theApp->Run();
+
+
+
   FrescoPlotter* frescoPlotter = new FrescoPlotter(info);
   if(info->HaveFrescoFileName()){
      
@@ -104,13 +121,15 @@ Int_t main(Int_t argc, char **argv){
     Int_t binT=hist1dCSdOcmFresco[0][0]->FindBin(info->fAngleMax*180.0/TMath::Pi()); // cut to bin
 
     //Float_t specFact[5]={1.0, 1.0, 1.0, 1.0, 1.0};  // dummy
-    //Float_t specFact[5]={1.0, 0.24, 0.36, 0.02, 2.5}; // 57Cr states, 0=elastic     
-    //Float_t specFact[5]={1.0, 0.44, 0.54, 0.04, 0.45}; // 53Ti states, 0=elastic     
-    Float_t specFact[5]={1.0, 0.48, 0.89, 0.84, 0.30}; // 50Ca states, 0=elastic     
+    ////Float_t specFact[5]={1.0, 0.24, 0.36, 0.02, 2.5}; // 57Cr states, 0=elastic     
+    ////Float_t specFact[5]={1.0, 0.44, 0.54, 0.04, 0.45}; // 53Ti states, 0=elastic     
+    ////Float_t specFact[5]={1.0, 0.48, 0.89, 0.84, 0.30}; // 50Ca states, 0=elastic     
 
     for(Int_t h=0; h<numberOfStates+1; h++){
       hist2dCSdOcmFresco[h] = frescoPlotter->Get2DHistogramOmegaState(h);
+      hist2dCSdOcmxEFresco[h] = frescoPlotter->Get2DHistogramOmegaxEState(h);
       hist2dCSdTcmFresco[h] = frescoPlotter->Get2DHistogramThetaState(h);
+      hist2dCSdTcmxEFresco[h] = frescoPlotter->Get2DHistogramThetaxEState(h);
 
 
 
@@ -134,7 +153,7 @@ Int_t main(Int_t argc, char **argv){
           //printf("Histogram %d: integral from %f (bin %d) to %f (bin%d) is %f\n", h, info->fAngleMin, bin1, info->fAngleMax, bin2, histCScmFresco[h]->Integral(bin1, bin2));
         }else if(h>0){
           //histCSstates->SetBinContent(h+1, histCScmFresco[h]->Integral(binF, binT));
-          hist1dCSSPstates[e]->SetBinContent(h+1, TMath::Pi()/180.0* hist1dCSdTcmFresco[e][h]->Integral(0, binN) * specFact[h]); // todo: spec fact in input file!!!!!
+          hist1dCSSPstates[e]->SetBinContent(h+1, TMath::Pi()/180.0* hist1dCSdTcmFresco[e][h]->Integral(0, binN) * info->fStateSpecFact[h]); // todo: spec fact in input file!!!!!
 
           //graf1dCSdTlab[e][h] = new TGraph();
           graf1dCSdTlab[e][h] = frescoPlotter->HistCMToGraphLab(hist1dCSdTcmFresco[e][h], frescoPlotter->GetBeamEnergyMeV(e));
@@ -386,7 +405,7 @@ Int_t main(Int_t argc, char **argv){
   Double_t lightP[3], lightPtot, targetP[3], targetPtot, beamP[3], beamPtot, heavyP[3], heavyPtot;
   
   // gamma variables
-  const Int_t maxGammas = 2;
+  const Int_t maxGammas = maxNumberOfStates+1;
   Int_t gammaMul=0;
   Float_t gammaE[maxGammas]={NAN};
   Float_t gammaERest[maxGammas]={NAN};
@@ -659,9 +678,9 @@ Int_t main(Int_t argc, char **argv){
       }
 
       // uniform in CM system
-      //lightTheta=randomizer->Uniform(TMath::Pi());
+      lightTheta=randomizer->Uniform(TMath::Pi());
       //lightTheta=randomizer->Uniform(info->fAngleMin, info->fAngleMax);
-      lightTheta=sinus->GetRandom();
+      //lightTheta=sinus->GetRandom();
     }
     
     lightThetaCM = lightTheta; // one of them will be boosted, depending on the existence of a fresco file
@@ -700,6 +719,15 @@ Int_t main(Int_t argc, char **argv){
     }
         
     lightEnergy=reactionTemp->ELab(lightTheta,2);
+    
+    
+    if(info->PaceOnly()){
+      state=-1;
+      histEThdegPace->GetRandom2(lightTheta, lightEnergy);
+      lightTheta*=TMath::Pi()/180.0;
+      lightThetaCM=-1.0;
+
+    }
 
     //printf("CM/Lab conversion (state %d): thetaCM = %f, thetaLab = %f, betaCM = %f, lightEnergy = %f\n", state, lightThetaCM, lightTheta, reaction[state]->GetBetacm(), lightEnergy);
 
@@ -761,7 +789,7 @@ Int_t main(Int_t argc, char **argv){
     //  printf("state %d: theta %f, energy %f, mass %f, rec.rho %f,  ex en %f\n", state, lightTheta, lightEnergy, lightMass, rec.Rho(), excEn);
     //}
 
-    if(excEn<-0.02){ // something went wrong
+    if((excEn<-0.02) && !(info->PaceOnly())){ // something went wrong
       printf("Oops, excitation energy is %f MeV! Redoing this event.\n", excEn);
       i--;
       continue;
@@ -873,29 +901,36 @@ Int_t main(Int_t argc, char **argv){
     
     if(info->AddGammas()){
       // generate gamma
-      if(state>1){
-        gammaMul=1;
-        //gammaThetaRest[0]=randomizer->Uniform(0, TMath::Pi());
-        gammaThetaRest[0]=sinus->GetRandom();
-        gammaPhiRest[0]=randomizer->Uniform(-TMath::Pi(), TMath::Pi());
-        gammaERest[0]=stateEnergy[state];
+      gammaMul=info->fStateGammaMul[state];
+      //printf("state %d, gammaMul %d\n", state, gammaMul);
+      //if(state>1){
+      //  gammaMul=1;
+      if(gammaMul>0){
+        for(Int_t gam=0; gam<gammaMul; gam++){
+          //gammaThetaRest[0]=randomizer->Uniform(0, TMath::Pi());
+          gammaThetaRest[gam]=sinus->GetRandom();
+          gammaPhiRest[gam]=randomizer->Uniform(-TMath::Pi(), TMath::Pi());
+          //gammaERest[gam]=stateEnergy[state];
+          gammaERest[gam]=info->fStateGammaEnergies[state][gam];
 
-        //printf("generated gamma with energy %f, theta %f, phi %f\n", gammaENoBoost[0], gammaTheta[0], gammaPhi[0]);
+          //printf("generated gamma with energy %f, theta %f, phi %f\n", gammaENoBoost[0], gammaTheta[0], gammaPhi[0]);
 
-        TVector3 vGamma(0,0,1);
-        vGamma.SetMagThetaPhi(gammaERest[0], gammaThetaRest[0], gammaPhiRest[0]);
-        TLorentzVector lGamma(vGamma, gammaERest[0]);
+          TVector3 vGamma(0,0,1);
+          vGamma.SetMagThetaPhi(gammaERest[gam], gammaThetaRest[gam], gammaPhiRest[gam]);
+          TLorentzVector lGamma(vGamma, gammaERest[gam]);
 
-        vBeam.SetMag(projBeta);
+          vBeam.SetMag(projBeta);
 
-        lGamma.Boost(vBeam);
-        
-        gammaE[0]=lGamma.P();
-        gammaTheta[0]=lGamma.Theta();
-        gammaPhi[0]=lGamma.Phi();
+          lGamma.Boost(vBeam);
+          
+          gammaE[gam]=lGamma.P();
+          gammaTheta[gam]=lGamma.Theta();
+          gammaPhi[gam]=lGamma.Phi();
+
+        }
 
       }else{
-        gammaMul=0;
+        //gammaMul=0;
         for(Int_t i=0; i<maxGammas; i++){
           gammaTheta[i]=NAN;
           gammaPhi[i]=NAN;
@@ -953,7 +988,9 @@ Int_t main(Int_t argc, char **argv){
     for(Int_t s=0; s<numberOfStates+1; s++){
       outfile->cd();
       hist2dCSdOcmFresco[s]->Write(Form("histCS_dOmega_Cm_Fresco_2d_%02d", s));
+      hist2dCSdOcmxEFresco[s]->Write(Form("histCS_dOmega_xE_Cm_Fresco_2d_%02d", s));
       hist2dCSdTcmFresco[s]->Write(Form("histCS_dTheta_Cm_Fresco_2d_%02d", s));
+      hist2dCSdTcmxEFresco[s]->Write(Form("histCS_dTheta_xE_Cm_Fresco_2d_%02d", s));
     }
 
   }
