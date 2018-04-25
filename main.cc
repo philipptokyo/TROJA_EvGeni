@@ -12,6 +12,8 @@
 #include "main.hh"
 #include "InputInfo.hh"
 #include "Nucleus.hh"
+#include "Compound.hh"
+#include "Reconstruction.hh"
 #include "Kinematics.hh"
 #include "LibPerso.h"
 #include "FrescoPlotter.hh"
@@ -23,10 +25,6 @@ using namespace std;
 
 
 Int_t main(Int_t argc, char **argv){
-  
-  
-  
-  
   
   
   // if root shall stop the program before it finished, comment this in
@@ -79,12 +77,12 @@ Int_t main(Int_t argc, char **argv){
   //TH2F* histCScmFresco2dCut[maxNumberOfStates+1];
   TH2F* histETh = new TH2F("histETh", "Energy vs. Theta_lab", 360, 0, 180, 200, 0, 100);
   
-  TH1D* hist1dCSdOlabdegPace;
+  //TH1D* hist1dCSdOlabdegPace;
   TH2D* histEThdegPace;
   PacePlotter* pace = new PacePlotter();
   if(info->HavePaceFileName()){
     pace->parse(info->fOutFileNamePace);
-    hist1dCSdOlabdegPace = pace->MakeCSHist();
+    //hist1dCSdOlabdegPace = pace->MakeCSHist();
     histEThdegPace = pace->Make2DHist();
   }
 
@@ -234,11 +232,15 @@ Int_t main(Int_t argc, char **argv){
   
 
   
-  Float_t beamE=info->fBeamEnergy;    // in MeV/u
+  Float_t beamE=info->fBeamEnergy;    // in AMeV
   Float_t beamX=0.0, beamY=0.0, beamZ=0.0; // position in mm
   Float_t beamA=0.0, beamB=0.0; // angle in mrad
   Float_t beamTheta=0.0, beamPhi=0.0; // in rad
   Int_t beamNoEvents=0;
+
+  Float_t vertex[3] = {0.0};
+  Float_t vertexBeamE = 0.0;
+  Float_t vertexPath = 0.0; // path length through target to vertex
   
 
 
@@ -300,6 +302,22 @@ Int_t main(Int_t argc, char **argv){
   //printf("maxNumberOfStates = %d\n", maxNumberOfStates);
   //printf("getting q vaue, number of states is %i\n", numberOfStates);
   qValue=reaction[1]->GetQValue();
+
+
+  // for energy loss calculation in target
+  Compound* comTarg = new Compound((char*)"CD2");
+  //char* massFile = (char*)"/home/philipp/programme/makeEvents/mass.dat";
+
+  // define a thickness for the constructor
+  //Double_t mm2mgcm = 0.819*100.0;
+  Double_t mm2mgcm = info->GetTargetDensity()*100.0;
+  Reconstruction* recons = new Reconstruction(proj, comTarg, mm2mgcm*2.0); // mg/cm2, Recon takes half
+
+
+
+
+
+
   
    
   printf("Nuclear masses: projectile %6.10f, target %6.10f, light ejectile %6.10f, heavy ejectile %6.10f; Q-value %f\n", projMass, targetMass, lightMass, heavyMass, qValue); 
@@ -443,6 +461,10 @@ Int_t main(Int_t argc, char **argv){
   events->Branch("beamPtot",&beamPtot, "beamPtot/D");
   events->Branch("heavyP",&heavyP, "heavyP[3]/D");
   events->Branch("heavyPtot",&heavyPtot, "heavyPtot/D");
+  events->Branch("vertex", vertex, "vertex[3]/F");
+  events->Branch("vertexBeamE", &vertexBeamE, "vertexBeamE/F");
+  events->Branch("vertexPath", &vertexPath, "vertexPath/F");
+
   events->Branch("state", &state, "state/I");
   events->Branch("excitationEnergy", &excEn, "excitationEnergy/F");
   events->Branch("missingMass", &missMass, "missingMass/F");
@@ -535,9 +557,6 @@ Int_t main(Int_t argc, char **argv){
     }
 
 
-
-
-
     if(info->Source()){
       
       //lightTheta = randomizer->Uniform(0.0, 180.0)/180.0*TMath::Pi();
@@ -560,9 +579,6 @@ Int_t main(Int_t argc, char **argv){
       continue;
 
     }
-
-
-
 
 
 
@@ -619,10 +635,23 @@ Int_t main(Int_t argc, char **argv){
     beamPhi=vBeam.Phi();
 
 
-//beamE-=5.0; // hack for testing only
+    // calculate energy loss in target
+    Double_t effThick = info->GetTargetSize(2)/vBeam.CosTheta();
+    vertexPath = randomizer->Uniform(effThick);
+
+    recons->SetTargetThickness(vertexPath*mm2mgcm);
+    //printf("beamE %lf, projA %d, (double)(beamE*(Float_t)projA) %lf\n", beamE, projA, (double)(beamE*(Float_t)projA));
+    vertexBeamE=recons->EnergyAfter((double)(beamE*(Float_t)projA), -5)/projA;
+    //printf("vertexBeamE %lf\n", vertexBeamE);
+
+    vertex[0]=beamX;
+    vertex[1]=beamY;
+    vertex[2]= (vertexPath * vBeam.CosTheta()) - (info->GetTargetSize(2)/2.0);
 
 
-  // this is actually deprecated: 
+    
+
+    // this is actually deprecated: 
     // check if all states can be populated
     Int_t maxState=numberOfStates+1;
     if(!(info->HaveFrescoFileName()) && !(info->FrescoHeaderOnly()) ){
@@ -641,7 +670,8 @@ Int_t main(Int_t argc, char **argv){
     if(info->HaveFrescoFileName()){
 
       // for beam energy profile: get the energy bin number first
-      Int_t energyBin = hist2dCSdOcmFresco[0]->GetYaxis()->FindBin(beamE*projA);
+      //Int_t energyBin = hist2dCSdOcmFresco[0]->GetYaxis()->FindBin(beamE*projA);
+      Int_t energyBin = hist2dCSdOcmFresco[0]->GetYaxis()->FindBin(vertexBeamE*projA);
       //printf("Debug: Found bin %d for beam energy %f (maxbins %d)\n", energyBin, beamE*projA, frescoPlotter->GetBeamEnergyBins());
       if(frescoPlotter->GetBeamEnergyBins()-1 < energyBin){
         energyBin=frescoPlotter->GetBeamEnergyBins()-1;
@@ -692,17 +722,19 @@ Int_t main(Int_t argc, char **argv){
 
     Kinematics* reactionTemp;
     
-    if(info->ProfileBeamE()){
+    //if(info->ProfileBeamE()){
 
       if(state==0){
-        reactionTemp = new Kinematics(proj, targ, targ, proj, beamE*projA, stateEnergy[0]);
+        //reactionTemp = new Kinematics(proj, targ, targ, proj, beamE*projA, stateEnergy[0]);
+        reactionTemp = new Kinematics(proj, targ, targ, proj, vertexBeamE*projA, stateEnergy[0]);
       }else{
-        reactionTemp = new Kinematics(proj, targ, reco, ejec, beamE*projA, stateEnergy[state]);
+        //reactionTemp = new Kinematics(proj, targ, reco, ejec, beamE*projA, stateEnergy[state]);
+        reactionTemp = new Kinematics(proj, targ, reco, ejec, vertexBeamE*projA, stateEnergy[state]);
       }
 
-    }else{
-      reactionTemp = reaction[state];
-    }
+    //}else{
+    //  reactionTemp = reaction[state];
+    //}
     
     // fresco theta distribution is in CM
     // -> boost to lab
@@ -719,6 +751,9 @@ Int_t main(Int_t argc, char **argv){
     }
         
     lightEnergy=reactionTemp->ELab(lightTheta,2);
+
+    //// here todo, this is a hack, but can be introduced as proton source
+    //lightEnergy=5.0;
     
     
     if(info->PaceOnly()){
@@ -767,8 +802,8 @@ Int_t main(Int_t argc, char **argv){
     //lightEnergy=reaction[s]->ELab(lightTheta/180.0*TMath::Pi(),2);
 
 
-// constant kinetic energy for testing reasons
-//lightEnergy=beamE;
+    // constant kinetic energy for testing reasons
+    //lightEnergy=beamE;
 
     //printf("  ELab is %f\n", lightEnergy);
 
@@ -789,11 +824,11 @@ Int_t main(Int_t argc, char **argv){
     //  printf("state %d: theta %f, energy %f, mass %f, rec.rho %f,  ex en %f\n", state, lightTheta, lightEnergy, lightMass, rec.Rho(), excEn);
     //}
 
-    if((excEn<-0.02) && !(info->PaceOnly())){ // something went wrong
-      printf("Oops, excitation energy is %f MeV! Redoing this event.\n", excEn);
-      i--;
-      continue;
-    }
+    //if((excEn<-0.02) && !(info->PaceOnly())){ // something went wrong
+    //  printf("Oops, excitation energy is %f MeV! Redoing this event.\n", excEn);
+    //  i--;
+    //  continue;
+    //}
 
     //delete reactionTemp;
 
@@ -822,7 +857,8 @@ Int_t main(Int_t argc, char **argv){
     // but not the spread
 
 
-    Float_t projGamma = (beamE * (Float_t)projA) / projMass + 1.0;
+    //Float_t projGamma = (beamE * (Float_t)projA) / projMass + 1.0;
+    Float_t projGamma = (vertexBeamE * (Float_t)projA) / projMass + 1.0;
     Float_t projBeta = TMath::Sqrt(1.0 - 1.0/(projGamma*projGamma));
     Float_t projMomentum = projMass * TMath::Sqrt(projGamma*projGamma - 1.0);
 
@@ -830,7 +866,8 @@ Int_t main(Int_t argc, char **argv){
     //Float_t lightBeta = TMath::Sqrt(1.0 - 1.0/(lightGamma*lightGamma));
     Float_t lightMomentum = lightMass * TMath::Sqrt(lightGamma*lightGamma - 1.0);
 
-    Float_t cmBeta = projMomentum / (beamE*(Float_t)projA + projMass + targetMass );
+    //Float_t cmBeta = projMomentum / (beamE*(Float_t)projA + projMass + targetMass );
+    Float_t cmBeta = projMomentum / (vertexBeamE*(Float_t)projA + projMass + targetMass );
     Float_t cmEnergy = TMath::Sqrt(projMass*projMass + targetMass*targetMass + 2.0*targetMass*(projMass*projGamma));
     
     TVector3 cmV(0.0, 0.0, cmBeta);
@@ -866,7 +903,8 @@ Int_t main(Int_t argc, char **argv){
 
     TLorentzVector projL(0.0, 0.0, 0.0, 1.0);
     projL.SetVect(projV);
-    projL.SetE(beamE * (Float_t)projA + projMass);
+    //projL.SetE(beamE * (Float_t)projA + projMass);
+    projL.SetE(vertexBeamE * (Float_t)projA + projMass);
     
     
 //    beamP[0]=projL.Px();
