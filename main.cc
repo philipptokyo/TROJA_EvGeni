@@ -588,9 +588,21 @@ Int_t main(Int_t argc, char **argv){
     // and reset afterwards those information which are not asked to be profiled
     if(info->HaveOedoSimFileName()){ 
 
-      // shortened oedo sim file contains only good events
-      Int_t rndmEvnt = (Int_t)randomizer->Uniform(beamNoEvents);
-      treeBeamProfile->GetEvent(rndmEvnt);
+      beamX=999999999.9;
+      while( (TMath::Abs(beamX) > info->GetTargetSize(0)/2.0) || (TMath::Abs(beamY) > info->GetTargetSize(1)/2.0) ){
+        
+        //Bool_t printagain=false;
+        //if((TMath::Abs(beamX) > info->GetTargetSize(0)) || (TMath::Abs(beamY) > info->GetTargetSize(1))){
+        //  printf("event %d\nbeamX %lf, beamY %lf, target size x %lf, y %lf\n",i, beamX, beamY,info->GetTargetSize(0),info->GetTargetSize(1));
+        //  printagain=true;
+        //}
+        // shortened oedo sim file contains only good events
+        Int_t rndmEvnt = (Int_t)randomizer->Uniform(beamNoEvents);
+        treeBeamProfile->GetEvent(rndmEvnt);
+        //if(printagain){
+        //  printf("Have now: beamX %lf, beamY %lf\n", beamX, beamY);
+        //}
+      }
 
 //beamE=randomizer->Uniform(10.0, 15.0);
 
@@ -654,16 +666,16 @@ Int_t main(Int_t argc, char **argv){
     // this is actually deprecated: 
     // check if all states can be populated
     Int_t maxState=numberOfStates+1;
-    if(!(info->HaveFrescoFileName()) && !(info->FrescoHeaderOnly()) ){
-      for(Int_t s=0; s<numberOfStates+1; s++){
-        if(beamE < stateEnergy[s]){
-          maxState=s;
-          ignoredState++;
-          cout << "Warning: state at " << stateEnergy[s] << " MeV is larger than beam energy (" << beamE << " MeV/u)! This state will be ignored! Using only " << maxState << " states!" << endl;
-          break;
-        }
-      }
-    }
+    //if(!(info->HaveFrescoFileName()) && !(info->FrescoHeaderOnly()) ){
+    //  for(Int_t s=0; s<numberOfStates+1; s++){
+    //    if(beamE < stateEnergy[s]){
+    //      maxState=s;
+    //      ignoredState++;
+    //      cout << "Warning: state at " << stateEnergy[s] << " MeV is larger than beam energy (" << beamE << " MeV/u)! This state will be ignored! Using only " << maxState << " states!" << endl;
+    //      break;
+    //    }
+    //  }
+    //}
     
     // choose the state populated
     // they are chosen from total cross section for each populated state
@@ -820,15 +832,17 @@ Int_t main(Int_t argc, char **argv){
     }
     excEn = reactionTemp->GetExcEnergy(rec)/1000.0; // MeV
     
-    //if(state==0){
+    ////if(state==0){
+    //if(TMath::IsNaN(lightTheta)){
     //  printf("state %d: theta %f, energy %f, mass %f, rec.rho %f,  ex en %f\n", state, lightTheta, lightEnergy, lightMass, rec.Rho(), excEn);
     //}
 
-    //if((excEn<-0.02) && !(info->PaceOnly())){ // something went wrong
-    //  printf("Oops, excitation energy is %f MeV! Redoing this event.\n", excEn);
-    //  i--;
-    //  continue;
-    //}
+    //if( ((excEn<-0.02) && !(info->PaceOnly())) || TMath::IsNaN(lightTheta)  ){ // something went wrong
+    if( TMath::IsNaN(lightTheta)  ){ // something went wrong
+      printf("Oops: Excitation of state %d, obtained excitation energy is %f MeV! Theta recoil is %lf! Redoing this event.\n", state, excEn, lightTheta);
+      i--;
+      continue;
+    }
 
     //delete reactionTemp;
 
