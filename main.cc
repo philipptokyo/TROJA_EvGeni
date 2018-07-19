@@ -305,7 +305,9 @@ Int_t main(Int_t argc, char **argv){
 
 
   // for energy loss calculation in target
-  Compound* comTarg = new Compound((char*)"CD2");
+  printf("\nCreating Compound target %s\n", info->GetTargetMaterial().c_str());
+  //Compound* comTarg = new Compound((char*)"CD2");
+  Compound* comTarg = new Compound((char*)info->GetTargetMaterial().c_str());
   //char* massFile = (char*)"/home/philipp/programme/makeEvents/mass.dat";
 
   // define a thickness for the constructor
@@ -650,6 +652,7 @@ Int_t main(Int_t argc, char **argv){
     // calculate energy loss in target
     Double_t effThick = info->GetTargetSize(2)/vBeam.CosTheta();
     vertexPath = randomizer->Uniform(effThick);
+    //vertexPath = info->GetTargetSize(2)/2.0; // hack for testing
 
     recons->SetTargetThickness(vertexPath*mm2mgcm);
     //printf("beamE %lf, projA %d, (double)(beamE*(Float_t)projA) %lf\n", beamE, projA, (double)(beamE*(Float_t)projA));
